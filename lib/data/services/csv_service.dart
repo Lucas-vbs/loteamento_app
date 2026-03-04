@@ -1,4 +1,5 @@
 import 'dart:io' show File;
+import 'dart:convert' show jsonDecode, jsonEncode;
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, kDebugMode;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
@@ -9,6 +10,7 @@ import 'package:loteamento_app/data/models/lot_model.dart';
 class CsvService {
   static const String _fileName = 'lotes_data.csv';
   static const String _assetPath = 'assets/data/lotes.csv';
+  static const String _jsonAssetPath = 'assets/data/lotes.json';
   static const String _webKey = 'lotes_csv_data';
 
   // Cache for web
@@ -31,6 +33,25 @@ class CsvService {
       final prefs = await SharedPreferences.getInstance();
       if (!prefs.containsKey(_webKey)) {
         try {
+          // Try loading JSON first (more robust on web)
+          try {
+            debugPrint('initDefault: Trying JSON asset $_jsonAssetPath');
+            final jsonData = await rootBundle.loadString(_jsonAssetPath);
+            if (!jsonData.trim().startsWith('{') && !jsonData.trim().startsWith('[')) {
+               throw Exception('JSON asset is invalid or HTML 404');
+            }
+            // Convert JSON to CSV for the internal _webKey if we want to keep consistency,
+            // or just store the JSON. Let's convert to CSV for backward compatibility.
+            final List<dynamic> jsonList = jsonDecode(jsonData);
+            final String csv = _jsonToCsv(jsonList);
+            await prefs.setString(_webKey, csv);
+            _webDataCache = csv;
+            debugPrint('initDefault: Loaded from JSON and converted to CSV cache');
+            return;
+          } catch (e) {
+            debugPrint('initDefault: JSON fallback failed, trying CSV: $e');
+          }
+
           debugPrint('initDefault: Loading asset $_assetPath');
           final data = await rootBundle.loadString(_assetPath);
           
@@ -388,5 +409,28 @@ class CsvService {
       }
     }
     await initDefault();
+  }
+
+  String _jsonToCsv(List<dynamic> jsonList) {
+    if (jsonList.isEmpty) return '';
+    final List<List<dynamic>> rows = [
+       ['id', 'matricula', 'lot_number', 'block_number', 'Proprietario', 'price', 'status', 'area', 'x', 'y']
+    ];
+    for (var item in jsonList) {
+      final map = item as Map<String, dynamic>;
+      rows.add([
+        map['id'] ?? '',
+        map['matricula'] ?? map['Matricula'] ?? '',
+        map['lot_number'] ?? map['Lot_number'] ?? map['lote'] ?? '',
+        map['block_number'] ?? map['Block_number'] ?? map['quadra'] ?? '',
+        map['proprietario'] ?? map['Proprietario'] ?? '',
+        map['price'] ?? map['Price'] ?? '',
+        map['status'] ?? map['Status'] ?? 'DISPONÍVEL',
+        map['area'] ?? map['Area'] ?? '',
+        map['x'] ?? '',
+        map['y'] ?? '',
+      ]);
+    }
+    return const ListToCsvConverter().convert(rows);
   }
 }
