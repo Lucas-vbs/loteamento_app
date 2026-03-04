@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:loteamento_app/data/models/lot_model.dart';
 import 'package:loteamento_app/presentation/providers/lot_provider.dart';
 import 'package:loteamento_app/presentation/pages/loading_screen.dart';
@@ -265,8 +266,9 @@ class _MainScreenState extends State<MainScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              // Simple password check (should be in .env in real app)
-              if (passController.text == 'admin123') {
+              // Password check from .env
+              final correctPassword = dotenv.env['ADMIN_PASSWORD'] ?? 'admin123';
+              if (passController.text == correctPassword) {
                 provider.setAdmin(true);
                 Navigator.pop(context);
               } else {
