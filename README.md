@@ -25,6 +25,9 @@ This project is configured to automatically deploy to GitHub Pages using GitHub 
 
 Once configured, every time you push to the `main` branch, the website will be updated automatically!
 
+> [!TIP]
+> **Data Priority**: The website now supports both JSON and CSV. For better reliability on GitHub Pages, JSON is preferred. If you update the CSV manually, it's a good idea to update the `lotes.json` as well (or ask me to do it for you).
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
