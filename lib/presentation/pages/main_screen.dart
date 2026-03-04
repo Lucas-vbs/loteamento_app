@@ -156,8 +156,10 @@ class _MainScreenState extends State<MainScreen> {
             builder: (context, constraints) {
               return InteractiveViewer(
                 transformationController: _transformationController,
-                minScale: 1.0,
-                maxScale: 5.0,
+                minScale: 0.1, // Allow zooming out more for mobile
+                maxScale: 10.0,
+                boundaryMargin: const EdgeInsets.all(1000.0), // Allow panning beyond edges
+                clipBehavior: Clip.none,
                 child: GestureDetector(
                   onTapDown: (details) =>
                       _handleTap(details.localPosition, constraints),
@@ -185,7 +187,9 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildPin(LotModel lot, BoxConstraints constraints, bool isAdmin) {
-    final pinSize = 20.0;
+    // Make pins larger on mobile for easier tapping
+    final isMobile = constraints.maxWidth < 600;
+    final pinSize = isMobile ? 32.0 : 20.0;
     // Calculate position based on percentage
     final left = (lot.x / 100) * constraints.maxWidth - (pinSize / 2);
     final top = (lot.y / 100) * constraints.maxHeight - (pinSize / 2);
@@ -204,9 +208,9 @@ class _MainScreenState extends State<MainScreen> {
       child: Center(
         child: Text(
           lot.lotNumber,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 8,
+            fontSize: isMobile ? 12 : 8,
             fontWeight: FontWeight.bold,
           ),
         ),
