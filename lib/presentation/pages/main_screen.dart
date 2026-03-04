@@ -107,45 +107,42 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Loteamento Interativo'),
-        actions: [
-          Consumer<LotProvider>(
-            builder: (context, provider, _) => Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(
-                    provider.isAdmin
-                        ? Icons.admin_panel_settings
-                        : Icons.person,
-                  ),
-                  onPressed: () => _toggleAdminMode(provider),
-                  tooltip: provider.isAdmin
-                      ? 'Modo Admin Ativo'
-                      : 'Entrar como Admin',
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Consumer<LotProvider>(
+          builder: (context, provider, _) => AppBar(
+            title: const Text('Loteamento Interativo'),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  provider.isAdmin
+                      ? Icons.admin_panel_settings
+                      : Icons.person,
                 ),
+                onPressed: () => _toggleAdminMode(provider),
+                tooltip:
+                    provider.isAdmin ? 'Modo Admin Ativo' : 'Entrar como Admin',
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () => provider.fetchLots(),
+                tooltip: 'Recarregar Dados',
+              ),
+              if (provider.isAdmin)
                 IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => provider.fetchLots(),
-                  tooltip: 'Recarregar Dados',
+                  icon: const Icon(Icons.bug_report),
+                  onPressed: () => _showDebugData(context, provider),
+                  tooltip: 'Ver Dados Carregados',
                 ),
-                if (provider.isAdmin)
-                   IconButton(
-                    icon: const Icon(Icons.bug_report),
-                    onPressed: () => _showDebugData(context, provider),
-                    tooltip: 'Ver Dados Carregados',
-                  ),
-                if (provider.isAdmin)
-                  IconButton(
-                    icon: const Icon(Icons.restore),
-                    onPressed: () => _confirmReset(context, provider),
-                    tooltip: 'Resetar para Padrão (Limpar Cache)',
-                  ),
-              ],
-            ),
+              if (provider.isAdmin)
+                IconButton(
+                  icon: const Icon(Icons.restore),
+                  onPressed: () => _confirmReset(context, provider),
+                  tooltip: 'Resetar para Padrão (Limpar Cache)',
+                ),
+            ],
           ),
-        ],
+        ),
       ),
       body: Consumer<LotProvider>(
         builder: (context, provider, child) {
