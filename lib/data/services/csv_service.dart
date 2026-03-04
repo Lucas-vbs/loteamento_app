@@ -262,21 +262,36 @@ class CsvService {
     // This helper only works on desktop platforms with access to the source code folder
     if (!kIsWeb && kDebugMode) {
       try {
+        // Sync CSV
         final sourceFile = File(_assetPath);
         if (await sourceFile.exists()) {
           await sourceFile.writeAsString(csvData);
-          debugPrint(
-            'Sync successful: Updated asset file on disk: ${_assetPath}',
-          );
         } else {
-          // Alternative attempt: check relative path from root
-          final projectFile = File('$_assetPath');
+          final projectFile = File(_assetPath);
           if (await projectFile.exists()) {
             await projectFile.writeAsString(csvData);
-            debugPrint(
-              'Sync successful: Updated project asset file: ${_assetPath}',
-            );
           }
+        }
+
+        // Sync JSON
+        final lots = await fetchLots();
+        final jsonStr = jsonEncode(lots.map((l) => {
+          'id': l.id,
+          'matricula': l.matricula,
+          'lot_number': l.lotNumber,
+          'block_number': l.blockNumber,
+          'proprietario': l.proprietario,
+          'price': 'R\$ ${l.price.toStringAsFixed(2).replaceAll('.', ',')}',
+          'status': l.status.label.toUpperCase(),
+          'area': l.area.toString().replaceAll('.', ','),
+          'x': l.x == -1.0 ? '' : l.x,
+          'y': l.y == -1.0 ? '' : l.y,
+        }).toList());
+
+        final jsonFile = File(_jsonAssetPath);
+        if (await jsonFile.exists()) {
+          await jsonFile.writeAsString(jsonStr);
+          debugPrint('Sync successful: Updated asset files (CSV & JSON) on disk');
         }
       } catch (e) {
         debugPrint('Skip asset sync (optional/dev-only): $e');
