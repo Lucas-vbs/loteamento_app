@@ -59,7 +59,7 @@ class LotModel {
     
     // Parse price string like "R$ 110.000,00"
     double parsedPrice = 0.0;
-    final priceStr = map['price']?.toString() ?? '';
+    final priceStr = (map['price'] ?? map['Price'])?.toString() ?? '';
     if (priceStr.isNotEmpty) {
       final cleanPrice = priceStr.replaceAll('R\$', '').replaceAll('.', '').replaceAll(',', '.').trim();
       parsedPrice = double.tryParse(cleanPrice) ?? 0.0;
@@ -67,7 +67,7 @@ class LotModel {
 
     // Parse area string like "492,35"
     double parsedArea = 0.0;
-    final areaStr = map['area']?.toString() ?? '';
+    final areaStr = (map['area'] ?? map['Area'])?.toString() ?? '';
     if (areaStr.isNotEmpty) {
       final cleanArea = areaStr.replaceAll(',', '.').trim();
       parsedArea = double.tryParse(cleanArea) ?? 0.0;
@@ -75,16 +75,24 @@ class LotModel {
 
     return LotModel(
       id: map['id']?.toString() ?? '',
-      matricula: map['matricula']?.toString() ?? '',
-      lotNumber: map['lot_number']?.toString() ?? '',
-      blockNumber: map['block_number']?.toString() ?? '',
+      matricula: (map['matricula'] ?? map['Matricula'])?.toString() ?? '',
+      lotNumber: (map['lot_number'] ?? map['Lot_number'] ?? map['lote'])?.toString() ?? '',
+      blockNumber: (map['block_number'] ?? map['Block_number'] ?? map['quadra'])?.toString() ?? '',
       proprietario: propValue.toString(),
       price: parsedPrice,
-      status: _parseStatus(map['status']?.toString()),
+      status: _parseStatus((map['status'] ?? map['Status'])?.toString()),
       area: parsedArea,
-      x: double.tryParse(map['x'].toString()) ?? -1.0,
-      y: double.tryParse(map['y'].toString()) ?? -1.0,
+      x: _parseDouble(map['x']),
+      y: _parseDouble(map['y']),
     );
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value == null) return -1.0;
+    if (value is num) return value.toDouble();
+    final str = value.toString().trim();
+    if (str.isEmpty || str.toLowerCase() == 'null') return -1.0;
+    return double.tryParse(str) ?? -1.0;
   }
 
   bool get hasLocation => x != -1.0 && y != -1.0;

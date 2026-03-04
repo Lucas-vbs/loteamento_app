@@ -113,17 +113,26 @@ class CsvService {
   Future<List<LotModel>> fetchLots() async {
     try {
       final csvString = await _readData();
-      if (csvString.isEmpty) return [];
+      if (csvString.isEmpty) {
+        debugPrint('fetchLots: csvString is empty');
+        return [];
+      }
 
       final List<List<dynamic>> rows = const CsvToListConverter().convert(
         csvString,
       );
-      if (rows.isEmpty || rows.length == 1) return [];
+      if (rows.isEmpty || rows.length == 1) {
+        debugPrint('fetchLots: rows empty or only header');
+        return [];
+      }
 
-      final header = rows[0].map((e) => e.toString()).toList();
+      final header = rows[0].map((e) => e.toString().trim()).toList();
       final dataRows = rows.sublist(1);
 
-      return dataRows.map((row) {
+      debugPrint('fetchLots: Processing ${dataRows.length} data rows');
+
+      final List<LotModel> results = [];
+      for (var row in dataRows) {
         final map = <String, dynamic>{};
         for (var i = 0; i < header.length; i++) {
           if (i < row.length) {
@@ -134,11 +143,12 @@ class CsvService {
         // Ensure every lot has a unique ID even if not yet placed
         if (map['id'] == null || map['id'].toString().isEmpty) {
           map['id'] =
-              'lot_${map['matricula'] ?? map['lot_number']}_${map['block_number']}';
+              'lot_${map['matricula'] ?? map['lot_number'] ?? map['lote']}_${map['block_number'] ?? map['quadra']}';
         }
 
-        return LotModel.fromMap(map);
-      }).toList();
+        results.add(LotModel.fromMap(map));
+      }
+      return results;
     } catch (e) {
       debugPrint('Error fetching lots from CSV: $e');
       return [];
@@ -340,5 +350,19 @@ class CsvService {
 
   Future<void> importCsv(String csvContent) async {
     await _writeData(csvContent);
+  }
+
+  Future<void> clearLocalCache() async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_webKey);
+      _webDataCache = null;
+    } else {
+      final file = await _localFile;
+      if (file != null && await file.exists()) {
+        await file.delete();
+      }
+    }
+    await initDefault();
   }
 }

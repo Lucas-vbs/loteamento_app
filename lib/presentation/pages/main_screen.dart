@@ -41,10 +41,12 @@ class _MainScreenState extends State<MainScreen> {
     final unplaced = provider.unplacedLots;
 
     if (unplaced.isEmpty) {
+      final total = provider.lots.length;
+      final msg = total == 0 
+          ? 'Nenhum lote carregado do CSV. Verifique o arquivo.' 
+          : 'Todos os $total lotes já possuem pinos vinculados.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Todos os lotes do CSV já possuem pinos.'),
-        ),
+        SnackBar(content: Text(msg)),
       );
       return;
     }
@@ -104,7 +106,14 @@ class _MainScreenState extends State<MainScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => context.read<LotProvider>().fetchLots(),
+            tooltip: 'Recarregar Dados',
           ),
+          if (provider.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.restore),
+              onPressed: () => _confirmReset(context, provider),
+              tooltip: 'Resetar para Padrão (Limpar Cache)',
+            ),
         ],
       ),
       body: Consumer<LotProvider>(
@@ -245,6 +254,31 @@ class _MainScreenState extends State<MainScreen> {
               }
             },
             child: const Text('Entrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmReset(BuildContext context, LotProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Resetar Dados?'),
+        content: const Text(
+          'Isso irá apagar as alterações salvas no navegador e recarregar o arquivo CSV original dos assets. Continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.resetData();
+              Navigator.pop(context);
+            },
+            child: const Text('Resetar', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

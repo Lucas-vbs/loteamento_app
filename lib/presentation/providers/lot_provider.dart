@@ -10,6 +10,7 @@ class LotProvider with ChangeNotifier {
 
   LotProvider(this._csvService);
 
+  List<LotModel> get lots => _lots;
   List<LotModel> get placedLots => _lots.where((l) => l.hasLocation).toList();
   List<LotModel> get unplacedLots => _lots.where((l) => !l.hasLocation).toList();
   
@@ -82,5 +83,10 @@ class LotProvider with ChangeNotifier {
   }
   Future<String> uploadPins() async {
     return await _csvService.uploadPins();
+  }
+
+  Future<void> resetData() async {
+    await _csvService.clearLocalCache();
+    await fetchLots();
   }
 }
