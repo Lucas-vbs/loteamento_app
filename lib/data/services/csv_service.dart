@@ -31,10 +31,18 @@ class CsvService {
       final prefs = await SharedPreferences.getInstance();
       if (!prefs.containsKey(_webKey)) {
         try {
+          debugPrint('initDefault: Loading asset $_assetPath');
           final data = await rootBundle.loadString(_assetPath);
+          
+          if (data.trim().startsWith('<!DOCTYPE html>') || data.trim().startsWith('<html')) {
+            throw Exception('Asset returned HTML instead of CSV - likely 404');
+          }
+          
           await prefs.setString(_webKey, data);
           _webDataCache = data;
+          debugPrint('initDefault: Asset loaded and cached successfully');
         } catch (e) {
+          debugPrint('initDefault: Error loading asset: $e');
           final header = [
             [
               'id',
@@ -55,6 +63,7 @@ class CsvService {
         }
       } else {
         _webDataCache = prefs.getString(_webKey);
+        debugPrint('initDefault: Using cached data from SharedPreferences');
       }
       return;
     }
@@ -118,21 +127,31 @@ class CsvService {
         return [];
       }
 
+      // Check if it's HTML (common error on web deployment)
+      if (csvString.trim().startsWith('<!DOCTYPE html>') || csvString.trim().startsWith('<html')) {
+        debugPrint('fetchLots ERROR: Data starts with HTML tags. Resetting cache.');
+        await clearLocalCache();
+        return await fetchLots();
+      }
+
       final List<List<dynamic>> rows = const CsvToListConverter().convert(
         csvString,
       );
       if (rows.isEmpty || rows.length == 1) {
-        debugPrint('fetchLots: rows empty or only header');
+        debugPrint('fetchLots: rows empty or only header. Header: ${rows.isNotEmpty ? rows[0] : "none"}');
         return [];
       }
 
       final header = rows[0].map((e) => e.toString().trim()).toList();
       final dataRows = rows.sublist(1);
 
-      debugPrint('fetchLots: Processing ${dataRows.length} data rows');
+      debugPrint('fetchLots: Processing ${dataRows.length} data rows. Header: $header');
 
       final List<LotModel> results = [];
       for (var row in dataRows) {
+        // Skip empty rows
+        if (row.isEmpty || (row.length == 1 && row[0].toString().isEmpty)) continue;
+
         final map = <String, dynamic>{};
         for (var i = 0; i < header.length; i++) {
           if (i < row.length) {
@@ -146,8 +165,13 @@ class CsvService {
               'lot_${map['matricula'] ?? map['lot_number'] ?? map['lote']}_${map['block_number'] ?? map['quadra']}';
         }
 
-        results.add(LotModel.fromMap(map));
+        final lot = LotModel.fromMap(map);
+        results.add(lot);
       }
+      
+      final placed = results.where((l) => l.hasLocation).length;
+      debugPrint('fetchLots SUCCESS: ${results.length} total, $placed placed, ${results.length - placed} unplaced');
+      
       return results;
     } catch (e) {
       debugPrint('Error fetching lots from CSV: $e');
