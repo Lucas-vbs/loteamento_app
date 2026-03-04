@@ -105,27 +105,33 @@ class _MainScreenState extends State<MainScreen> {
         title: const Text('Loteamento Interativo'),
         actions: [
           Consumer<LotProvider>(
-            builder: (context, provider, _) => IconButton(
-              icon: Icon(
-                provider.isAdmin ? Icons.admin_panel_settings : Icons.person,
-              ),
-              onPressed: () => _toggleAdminMode(provider),
-              tooltip: provider.isAdmin
-                  ? 'Modo Admin Ativo'
-                  : 'Entrar como Admin',
+            builder: (context, provider, _) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    provider.isAdmin
+                        ? Icons.admin_panel_settings
+                        : Icons.person,
+                  ),
+                  onPressed: () => _toggleAdminMode(provider),
+                  tooltip:
+                      provider.isAdmin ? 'Modo Admin Ativo' : 'Entrar como Admin',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => provider.fetchLots(),
+                  tooltip: 'Recarregar Dados',
+                ),
+                if (provider.isAdmin)
+                  IconButton(
+                    icon: const Icon(Icons.restore),
+                    onPressed: () => _confirmReset(context, provider),
+                    tooltip: 'Resetar para Padrão (Limpar Cache)',
+                  ),
+              ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<LotProvider>().fetchLots(),
-            tooltip: 'Recarregar Dados',
-          ),
-          if (provider.isAdmin)
-            IconButton(
-              icon: const Icon(Icons.restore),
-              onPressed: () => _confirmReset(context, provider),
-              tooltip: 'Resetar para Padrão (Limpar Cache)',
-            ),
         ],
       ),
       body: Consumer<LotProvider>(
