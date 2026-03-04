@@ -32,8 +32,13 @@ class _MainScreenState extends State<MainScreen> {
     final x = (localOffset.dx / constraints.maxWidth) * 100;
     final y = (localOffset.dy / constraints.maxHeight) * 100;
 
+    debugPrint('--- LOCALIZAÇÃO TOCADA ---');
+    debugPrint('X: $x');
+    debugPrint('Y: $y');
+    debugPrint('Configuração para CSV: ,$x,$y');
+    debugPrint('-------------------------');
+
     _showPlaceLotPicker(x, y);
-    print('$x,  $y');
   }
 
   void _showPlaceLotPicker(double x, double y) {
@@ -69,6 +74,13 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 subtitle: Text('Matrícula: ${lot.matricula}'),
                 onTap: () {
+                  debugPrint('--- VINCULANDO LOTE ---');
+                  debugPrint('Matrícula: ${lot.matricula}');
+                  debugPrint('Lote: ${lot.lotNumber} Quada: ${lot.blockNumber}');
+                  debugPrint('Coordenadas: x=$x, y=$y');
+                  debugPrint('COPIE PARA O CSV: ${lot.matricula} ... ,$x,$y');
+                  debugPrint('----------------------');
+                  
                   provider.placeLot(lot.matricula, x, y);
                   Navigator.pop(context);
                 },
@@ -202,6 +214,10 @@ class _MainScreenState extends State<MainScreen> {
 
             final newX = (localOffset.dx / constraints.maxWidth) * 100;
             final newY = (localOffset.dy / constraints.maxHeight) * 100;
+
+            debugPrint('--- PINO MOVIDO (${lot.matricula}) ---');
+            debugPrint('Novos valores para o CSV: ,$newX,$newY');
+            debugPrint('------------------------------------');
 
             context.read<LotProvider>().updateLotPosition(lot.id, newX, newY);
           },
