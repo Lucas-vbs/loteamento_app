@@ -48,12 +48,10 @@ class _MainScreenState extends State<MainScreen> {
 
     if (unplaced.isEmpty) {
       final total = provider.lots.length;
-      final msg = total == 0 
-          ? 'Nenhum lote carregado do CSV. Verifique o arquivo.' 
+      final msg = total == 0
+          ? 'Nenhum lote carregado do CSV. Verifique o arquivo.'
           : 'Todos os $total lotes já possuem pinos vinculados.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       return;
     }
 
@@ -77,11 +75,13 @@ class _MainScreenState extends State<MainScreen> {
                 onTap: () {
                   debugPrint('--- VINCULANDO LOTE ---');
                   debugPrint('Matrícula: ${lot.matricula}');
-                  debugPrint('Lote: ${lot.lotNumber} Quada: ${lot.blockNumber}');
+                  debugPrint(
+                    'Lote: ${lot.lotNumber} Quada: ${lot.blockNumber}',
+                  );
                   debugPrint('Coordenadas: x=$x, y=$y');
                   debugPrint('COPIE PARA O CSV: ${lot.matricula} ... ,$x,$y');
                   debugPrint('----------------------');
-                  
+
                   provider.placeLot(lot.matricula, x, y);
                   Navigator.pop(context);
                 },
@@ -116,8 +116,9 @@ class _MainScreenState extends State<MainScreen> {
                         : Icons.person,
                   ),
                   onPressed: () => _toggleAdminMode(provider),
-                  tooltip:
-                      provider.isAdmin ? 'Modo Admin Ativo' : 'Entrar como Admin',
+                  tooltip: provider.isAdmin
+                      ? 'Modo Admin Ativo'
+                      : 'Entrar como Admin',
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
@@ -267,7 +268,8 @@ class _MainScreenState extends State<MainScreen> {
           ElevatedButton(
             onPressed: () {
               // Password check from .env
-              final correctPassword = dotenv.env['ADMIN_PASSWORD'] ?? 'admin123';
+              final correctPassword =
+                  dotenv.env['ADMIN_PASSWORD'] ?? 'admin_lote_2026';
               if (passController.text == correctPassword) {
                 provider.setAdmin(true);
                 Navigator.pop(context);
