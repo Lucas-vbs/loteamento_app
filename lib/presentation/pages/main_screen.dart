@@ -126,6 +126,12 @@ class _MainScreenState extends State<MainScreen> {
                   tooltip: 'Recarregar Dados',
                 ),
                 if (provider.isAdmin)
+                   IconButton(
+                    icon: const Icon(Icons.bug_report),
+                    onPressed: () => _showDebugData(context, provider),
+                    tooltip: 'Ver Dados Carregados',
+                  ),
+                if (provider.isAdmin)
                   IconButton(
                     icon: const Icon(Icons.restore),
                     onPressed: () => _confirmReset(context, provider),
@@ -305,6 +311,51 @@ class _MainScreenState extends State<MainScreen> {
               Navigator.pop(context);
             },
             child: const Text('Resetar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDebugData(BuildContext context, LotProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('DEBUG: ${provider.lots.length} Lotes'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Total: ${provider.lots.length}'),
+              Text('Vinculados: ${provider.placedLots.length}'),
+              const Divider(),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: provider.lots.length,
+                  separatorBuilder: (context, index) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final lot = provider.lots[index];
+                    return ListTile(
+                      dense: true,
+                      title: Text('Matrícula: ${lot.matricula}'),
+                      subtitle: Text(
+                        'Coord: [${lot.x}, ${lot.y}] | Location: ${lot.hasLocation}',
+                        style: TextStyle(
+                          color: lot.hasLocation ? Colors.green : Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
           ),
         ],
       ),
