@@ -26,16 +26,21 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  void _handleTap(Offset localOffset, BoxConstraints constraints) {
+  void _handleTap(Offset localOffset, BuildContext context) {
     final provider = context.read<LotProvider>();
     if (!provider.isAdmin) return;
 
-    final x = (localOffset.dx / constraints.maxWidth) * 100;
-    final y = (localOffset.dy / constraints.maxHeight) * 100;
+    // Get the actual size of the image to calculate percentages correctly
+    final RenderBox? renderBox =
+        _imageKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final size = renderBox.size;
+    final x = (localOffset.dx / size.width) * 100;
+    final y = (localOffset.dy / size.height) * 100;
 
     debugPrint('--- LOCALIZAÇÃO TOCADA ---');
-    debugPrint('X: $x');
-    debugPrint('Y: $y');
+    debugPrint('X: $x%, Y: $y% (Baseado no tamanho da imagem: ${size.width}x${size.height})');
     debugPrint('Configuração para CSV: ,$x,$y');
     debugPrint('-------------------------');
 
@@ -156,26 +161,40 @@ class _MainScreenState extends State<MainScreen> {
             builder: (context, constraints) {
               return InteractiveViewer(
                 transformationController: _transformationController,
-                minScale: 0.1, // Allow zooming out more for mobile
+                minScale: 0.1,
                 maxScale: 10.0,
-                boundaryMargin: const EdgeInsets.all(1000.0), // Allow panning beyond edges
+                boundaryMargin: const EdgeInsets.all(2000.0),
                 clipBehavior: Clip.none,
-                child: GestureDetector(
-                  onTapDown: (details) =>
-                      _handleTap(details.localPosition, constraints),
-                  child: Stack(
-                    children: [
-                      Image.asset(
-                        'assets/images/map.png',
-                        key: _imageKey,
-                        width: constraints.maxWidth,
-                        height: constraints.maxHeight,
-                        fit: BoxFit.contain,
+                child: Center(
+                  child: IntrinsicWidth(
+                    child: IntrinsicHeight(
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onTapDown: (details) =>
+                                _handleTap(details.localPosition, context),
+                            child: Image.asset(
+                              'assets/images/map.png',
+                              key: _imageKey,
+                              fit: BoxFit.none, // Use natural image size
+                            ),
+                          ),
+                          // Use a Postioned.fill with another LayoutBuilder to get the EXACT image size
+                          // for the pins, ensuring they are always perfectly aligned with the image pixels.
+                          Positioned.fill(
+                            child: LayoutBuilder(
+                              builder: (context, mapConstraints) {
+                                return Stack(
+                                  children: provider.placedLots.map(
+                                    (lot) => _buildPin(lot, mapConstraints, provider.isAdmin),
+                                  ).toList(),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                      ...provider.placedLots.map(
-                        (lot) => _buildPin(lot, constraints, provider.isAdmin),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               );
@@ -226,12 +245,15 @@ class _MainScreenState extends State<MainScreen> {
           childWhenDragging: Container(),
           onDragEnd: (details) {
             // Calculate new position relative to the image container
-            final RenderBox renderBox =
-                _imageKey.currentContext?.findRenderObject() as RenderBox;
+            final RenderBox? renderBox =
+                _imageKey.currentContext?.findRenderObject() as RenderBox?;
+            if (renderBox == null) return;
+            
             final localOffset = renderBox.globalToLocal(details.offset);
+            final size = renderBox.size;
 
-            final newX = (localOffset.dx / constraints.maxWidth) * 100;
-            final newY = (localOffset.dy / constraints.maxHeight) * 100;
+            final newX = (localOffset.dx / size.width) * 100;
+            final newY = (localOffset.dy / size.height) * 100;
 
             debugPrint('--- PINO MOVIDO (${lot.matricula}) ---');
             debugPrint('Novos valores para o CSV: ,$newX,$newY');
