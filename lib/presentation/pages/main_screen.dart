@@ -1,0 +1,395 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:loteamento_app/data/models/lot_model.dart';
+import 'package:loteamento_app/presentation/providers/lot_provider.dart';
+import 'package:loteamento_app/presentation/pages/loading_screen.dart';
+import 'package:loteamento_app/presentation/pages/error_screen.dart';
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  final TransformationController _transformationController =
+      TransformationController();
+  final GlobalKey _imageKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LotProvider>().fetchLots();
+    });
+  }
+
+  void _handleTap(Offset localOffset, BoxConstraints constraints) {
+    final provider = context.read<LotProvider>();
+    if (!provider.isAdmin) return;
+
+    final x = (localOffset.dx / constraints.maxWidth) * 100;
+    final y = (localOffset.dy / constraints.maxHeight) * 100;
+
+    _showPlaceLotPicker(x, y);
+    print('$x,  $y');
+  }
+
+  void _showPlaceLotPicker(double x, double y) {
+    final provider = context.read<LotProvider>();
+    final unplaced = provider.unplacedLots;
+
+    if (unplaced.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Todos os lotes do CSV já possuem pinos.'),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Vincular Lote ao Mapa'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: unplaced.length,
+            separatorBuilder: (context, index) => const Divider(),
+            itemBuilder: (context, index) {
+              final lot = unplaced[index];
+              return ListTile(
+                title: Text(
+                  'Lote ${lot.lotNumber} - Quadra ${lot.blockNumber}',
+                ),
+                subtitle: Text('Matrícula: ${lot.matricula}'),
+                onTap: () {
+                  provider.placeLot(lot.matricula, x, y);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Loteamento Interativo'),
+        actions: [
+          Consumer<LotProvider>(
+            builder: (context, provider, _) => IconButton(
+              icon: Icon(
+                provider.isAdmin ? Icons.admin_panel_settings : Icons.person,
+              ),
+              onPressed: () => _toggleAdminMode(provider),
+              tooltip: provider.isAdmin
+                  ? 'Modo Admin Ativo'
+                  : 'Entrar como Admin',
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => context.read<LotProvider>().fetchLots(),
+          ),
+        ],
+      ),
+      body: Consumer<LotProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) return const LoadingScreen();
+          if (provider.error != null) {
+            return ErrorScreen(
+              message: provider.error!,
+              onRetry: () => provider.fetchLots(),
+            );
+          }
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return InteractiveViewer(
+                transformationController: _transformationController,
+                minScale: 1.0,
+                maxScale: 5.0,
+                child: GestureDetector(
+                  onTapDown: (details) =>
+                      _handleTap(details.localPosition, constraints),
+                  child: Stack(
+                    children: [
+                      Image.asset(
+                        'assets/images/map.png',
+                        key: _imageKey,
+                        width: constraints.maxWidth,
+                        height: constraints.maxHeight,
+                        fit: BoxFit.contain,
+                      ),
+                      ...provider.placedLots.map(
+                        (lot) => _buildPin(lot, constraints, provider.isAdmin),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPin(LotModel lot, BoxConstraints constraints, bool isAdmin) {
+    final pinSize = 20.0;
+    // Calculate position based on percentage
+    final left = (lot.x / 100) * constraints.maxWidth - (pinSize / 2);
+    final top = (lot.y / 100) * constraints.maxHeight - (pinSize / 2);
+
+    Widget pin = Container(
+      width: pinSize,
+      height: pinSize,
+      decoration: BoxDecoration(
+        color: lot.status.color.withValues(alpha: 0.8),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          lot.lotNumber,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+
+    if (isAdmin) {
+      return Positioned(
+        left: left,
+        top: top,
+        child: Draggable(
+          feedback: Opacity(opacity: 0.5, child: pin),
+          childWhenDragging: Container(),
+          onDragEnd: (details) {
+            // Calculate new position relative to the image container
+            final RenderBox renderBox =
+                _imageKey.currentContext?.findRenderObject() as RenderBox;
+            final localOffset = renderBox.globalToLocal(details.offset);
+
+            final newX = (localOffset.dx / constraints.maxWidth) * 100;
+            final newY = (localOffset.dy / constraints.maxHeight) * 100;
+
+            context.read<LotProvider>().updateLotPosition(lot.id, newX, newY);
+          },
+          child: GestureDetector(onTap: () => _showLotDetails(lot), child: pin),
+        ),
+      );
+    }
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: GestureDetector(onTap: () => _showLotDetails(lot), child: pin),
+    );
+  }
+
+  void _toggleAdminMode(LotProvider provider) {
+    if (provider.isAdmin) {
+      provider.setAdmin(false);
+    } else {
+      _showAdminLogin(provider);
+    }
+  }
+
+  void _showAdminLogin(LotProvider provider) {
+    final passController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Acesso Administrativo'),
+        content: TextField(
+          controller: passController,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'Senha'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Simple password check (should be in .env in real app)
+              if (passController.text == 'admin123') {
+                provider.setAdmin(true);
+                Navigator.pop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Senha incorreta')),
+                );
+              }
+            },
+            child: const Text('Entrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLotDetails(LotModel lot) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final provider = context.read<LotProvider>();
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Lote ${lot.lotNumber}',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: lot.status.color.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: lot.status.color),
+                    ),
+                    child: Text(
+                      lot.status.label,
+                      style: TextStyle(
+                        color: lot.status.color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 32),
+              _detailRow(
+                Icons.person_outline,
+                'Proprietário',
+                lot.proprietario,
+              ),
+              _detailRow(Icons.description, 'Matrícula', lot.matricula),
+              _detailRow(Icons.grid_view, 'Quadra', lot.blockNumber),
+              _detailRow(Icons.square_foot, 'Área', '${lot.area} m²'),
+              _detailRow(
+                Icons.payments,
+                'Preço',
+                'R\$ ${lot.price.toStringAsFixed(2)}',
+              ),
+              const SizedBox(height: 24),
+              // if (provider.isAdmin) ...[
+              //   SizedBox(
+              //     width: double.infinity,
+              //     height: 50,
+              //     child: OutlinedButton.icon(
+              //       style: OutlinedButton.styleFrom(
+              //         foregroundColor: Colors.red,
+              //         side: const BorderSide(color: Colors.red),
+              //         shape: RoundedRectangleBorder(
+              //           borderRadius: BorderRadius.circular(12),
+              //         ),
+              //       ),
+              //       onPressed: () async {
+              //         final confirm = await showDialog<bool>(
+              //           context: context,
+              //           builder: (context) => AlertDialog(
+              //             title: const Text('Remover Pin'),
+              //             content: const Text(
+              //               'Deseja realmente remover este lote do mapa? Ele voltará para a lista de não vinculados.',
+              //             ),
+              //             actions: [
+              //               TextButton(
+              //                 onPressed: () => Navigator.pop(context, false),
+              //                 child: const Text('Cancelar'),
+              //               ),
+              //               TextButton(
+              //                 onPressed: () => Navigator.pop(context, true),
+              //                 child: const Text(
+              //                   'Remover',
+              //                   style: TextStyle(color: Colors.red),
+              //                 ),
+              //               ),
+              //             ],
+              //           ),
+              //         );
+              //         if (confirm == true) {
+              //           await provider.removePin(lot.id);
+              //           if (context.mounted) Navigator.pop(context);
+              //         }
+              //       },
+              //       icon: const Icon(Icons.location_off),
+              //       label: const Text('Remover Pin / Realocar'),
+              //     ),
+              //   ),
+              //   const SizedBox(height: 12),
+              // ],
+              SizedBox(
+                width: double.infinity,
+                height: 30,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Fechar'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey[600]),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+}
