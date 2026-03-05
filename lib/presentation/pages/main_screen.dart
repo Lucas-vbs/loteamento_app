@@ -106,22 +106,18 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Consumer<LotProvider>(
-          builder: (context, provider, _) => AppBar(
+    return Consumer<LotProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          appBar: AppBar(
             title: const Text('Loteamento Interativo'),
             actions: [
               IconButton(
                 icon: Icon(
-                  provider.isAdmin
-                      ? Icons.admin_panel_settings
-                      : Icons.person,
+                  provider.isAdmin ? Icons.admin_panel_settings : Icons.person,
                 ),
                 onPressed: () => _toggleAdminMode(provider),
-                tooltip:
-                    provider.isAdmin ? 'Modo Admin Ativo' : 'Entrar como Admin',
+                tooltip: provider.isAdmin ? 'Modo Admin Ativo' : 'Entrar como Admin',
               ),
               IconButton(
                 icon: const Icon(Icons.refresh),
@@ -142,63 +138,51 @@ class _MainScreenState extends State<MainScreen> {
                 ),
             ],
           ),
-        ),
-      ),
-      body: Consumer<LotProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) return const LoadingScreen();
-          if (provider.error != null) {
-            return ErrorScreen(
-              message: provider.error!,
-              onRetry: () => provider.fetchLots(),
-            );
-          }
-
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return InteractiveViewer(
-                transformationController: _transformationController,
-                minScale: 0.1,
-                maxScale: 10.0,
-                boundaryMargin: const EdgeInsets.all(2000.0),
-                clipBehavior: Clip.none,
-                child: Center(
-                  child: IntrinsicWidth(
-                    child: IntrinsicHeight(
-                      child: Stack(
-                        children: [
-                          GestureDetector(
-                            onTapDown: (details) =>
-                                _handleTap(details.localPosition, context),
-                            child: Image.asset(
-                              'assets/images/map.png',
-                              key: _imageKey,
-                              fit: BoxFit.none, // Use natural image size
+          body: provider.isLoading
+              ? const LoadingScreen()
+              : provider.error != null
+                  ? ErrorScreen(
+                      message: provider.error!,
+                      onRetry: () => provider.fetchLots(),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        return InteractiveViewer(
+                          transformationController: _transformationController,
+                          minScale: 0.1,
+                          maxScale: 10.0,
+                          boundaryMargin: const EdgeInsets.all(2000.0),
+                          clipBehavior: Clip.none,
+                          child: Center(
+                            child: Stack(
+                              children: [
+                                // We use the Image itself to define the size of the Stack
+                                Image.asset(
+                                  'assets/images/map.png',
+                                  key: _imageKey,
+                                  fit: BoxFit.contain,
+                                ),
+                                // The Positioned.fill matches exactly the Image's rendered bounds
+                                Positioned.fill(
+                                  child: LayoutBuilder(
+                                    builder: (context, mapConstraints) {
+                                      return Stack(
+                                        children: provider.placedLots
+                                            .map((lot) => _buildPin(
+                                                lot, mapConstraints, provider.isAdmin))
+                                            .toList(),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          // Use a Postioned.fill with another LayoutBuilder to get the EXACT image size
-                          // for the pins, ensuring they are always perfectly aligned with the image pixels.
-                          Positioned.fill(
-                            child: LayoutBuilder(
-                              builder: (context, mapConstraints) {
-                                return Stack(
-                                  children: provider.placedLots.map(
-                                    (lot) => _buildPin(lot, mapConstraints, provider.isAdmin),
-                                  ).toList(),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+        );
+      },
     );
   }
 
