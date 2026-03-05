@@ -154,28 +154,37 @@ class _MainScreenState extends State<MainScreen> {
                           boundaryMargin: const EdgeInsets.all(2000.0),
                           clipBehavior: Clip.none,
                           child: Center(
-                            child: Stack(
-                              children: [
-                                // We use the Image itself to define the size of the Stack
-                                Image.asset(
-                                  'assets/images/map.png',
-                                  key: _imageKey,
-                                  fit: BoxFit.contain,
-                                ),
-                                // The Positioned.fill matches exactly the Image's rendered bounds
-                                Positioned.fill(
-                                  child: LayoutBuilder(
-                                    builder: (context, mapConstraints) {
-                                      return Stack(
-                                        children: provider.placedLots
-                                            .map((lot) => _buildPin(
-                                                lot, mapConstraints, provider.isAdmin))
-                                            .toList(),
-                                      );
-                                    },
+                            child: IntrinsicWidth(
+                              child: IntrinsicHeight(
+                                child: GestureDetector(
+                                  onTapDown: (details) =>
+                                      _handleTap(details.localPosition, context),
+                                  child: Stack(
+                                    children: [
+                                      // Image defines the natural size of the Stack
+                                      Image.asset(
+                                        'assets/images/map.png',
+                                        key: _imageKey,
+                                      ),
+                                      // Pins layer that perfectly matches the image dimensions
+                                      Positioned.fill(
+                                        child: LayoutBuilder(
+                                          builder: (context, mapConstraints) {
+                                            return Stack(
+                                              children: provider.placedLots
+                                                  .map((lot) => _buildPin(
+                                                      lot,
+                                                      mapConstraints,
+                                                      provider.isAdmin))
+                                                  .toList(),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         );
