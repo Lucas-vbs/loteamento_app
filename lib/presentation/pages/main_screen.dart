@@ -145,6 +145,30 @@ class _MainScreenState extends State<MainScreen> {
                     onPressed: () => _showCartorioFilterDialog(context, provider),
                     tooltip: 'Filtrar por Cartório',
                   ),
+                  IconButton(
+                    icon: Icon(
+                      provider.selectedStatuses.isEmpty
+                          ? Icons.flag_outlined
+                          : Icons.flag,
+                      color: provider.selectedStatuses.isEmpty
+                          ? null
+                          : Colors.orange,
+                    ),
+                    onPressed: () => _showStatusFilterDialog(context, provider),
+                    tooltip: 'Filtrar por Status',
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      provider.selectedBlocks.isEmpty
+                          ? Icons.grid_view_outlined
+                          : Icons.grid_view,
+                      color: provider.selectedBlocks.isEmpty
+                          ? null
+                          : Colors.orange,
+                    ),
+                    onPressed: () => _showBlockFilterDialog(context, provider),
+                    tooltip: 'Filtrar por Quadra',
+                  ),
                 ],
                 IconButton(
                   icon: Icon(
@@ -464,6 +488,88 @@ class _MainScreenState extends State<MainScreen> {
             TextButton(
               onPressed: () {
                 provider.clearCartorioFilter();
+                Navigator.pop(context);
+              },
+              child: const Text('Limpar Filtros'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fechar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStatusFilterDialog(BuildContext context, LotProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Filtrar por Status'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: LotStatus.values.map((status) {
+              return CheckboxListTile(
+                title: Text(status.label),
+                value: provider.selectedStatuses.contains(status),
+                onChanged: (value) {
+                  setState(() {
+                    provider.toggleStatusFilter(status);
+                  });
+                },
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                provider.clearStatusFilter();
+                Navigator.pop(context);
+              },
+              child: const Text('Limpar Filtros'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fechar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBlockFilterDialog(BuildContext context, LotProvider provider) {
+    final blocks = provider.allBlocks;
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Filtrar por Quadra'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: blocks.length,
+              itemBuilder: (context, index) {
+                final block = blocks[index];
+                return CheckboxListTile(
+                  title: Text('Quadra $block'),
+                  value: provider.selectedBlocks.contains(block),
+                  onChanged: (value) {
+                    setState(() {
+                      provider.toggleBlockFilter(block);
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                provider.clearBlockFilter();
                 Navigator.pop(context);
               },
               child: const Text('Limpar Filtros'),

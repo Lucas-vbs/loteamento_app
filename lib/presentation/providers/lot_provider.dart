@@ -9,6 +9,8 @@ class LotProvider with ChangeNotifier {
   String? _error;
   final Set<String> _selectedOwners = {};
   final Set<String> _selectedCartorios = {};
+  final Set<LotStatus> _selectedStatuses = {};
+  final Set<String> _selectedBlocks = {};
   final Set<String> _selectedLotIds = {};
   bool _isSelectionMode = false;
 
@@ -26,6 +28,14 @@ class LotProvider with ChangeNotifier {
     if (_selectedCartorios.isNotEmpty) {
       filtered = filtered.where((l) => _selectedCartorios.contains(l.cartorio)).toList();
     }
+
+    if (_selectedStatuses.isNotEmpty) {
+      filtered = filtered.where((l) => _selectedStatuses.contains(l.status)).toList();
+    }
+
+    if (_selectedBlocks.isNotEmpty) {
+      filtered = filtered.where((l) => _selectedBlocks.contains(l.blockNumber)).toList();
+    }
     
     return filtered;
   }
@@ -36,6 +46,8 @@ class LotProvider with ChangeNotifier {
   String? get error => _error;
   Set<String> get selectedOwners => _selectedOwners;
   Set<String> get selectedCartorios => _selectedCartorios;
+  Set<LotStatus> get selectedStatuses => _selectedStatuses;
+  Set<String> get selectedBlocks => _selectedBlocks;
   Set<String> get selectedLotIds => _selectedLotIds;
   bool get isSelectionMode => _isSelectionMode;
 
@@ -82,6 +94,21 @@ class LotProvider with ChangeNotifier {
       ..sort();
   }
 
+  List<String> get allBlocks {
+    return _lots
+        .map((l) => l.blockNumber)
+        .where((b) => b.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) {
+        // Try numeric sort
+        final na = int.tryParse(a);
+        final nb = int.tryParse(b);
+        if (na != null && nb != null) return na.compareTo(nb);
+        return a.compareTo(b);
+      });
+  }
+
   void toggleOwnerFilter(String owner) {
     if (_selectedOwners.contains(owner)) {
       _selectedOwners.remove(owner);
@@ -100,9 +127,29 @@ class LotProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleStatusFilter(LotStatus status) {
+    if (_selectedStatuses.contains(status)) {
+      _selectedStatuses.remove(status);
+    } else {
+      _selectedStatuses.add(status);
+    }
+    notifyListeners();
+  }
+
+  void toggleBlockFilter(String block) {
+    if (_selectedBlocks.contains(block)) {
+      _selectedBlocks.remove(block);
+    } else {
+      _selectedBlocks.add(block);
+    }
+    notifyListeners();
+  }
+
   void clearFilters() {
     _selectedOwners.clear();
     _selectedCartorios.clear();
+    _selectedStatuses.clear();
+    _selectedBlocks.clear();
     notifyListeners();
   }
 
@@ -113,6 +160,16 @@ class LotProvider with ChangeNotifier {
 
   void clearCartorioFilter() {
     _selectedCartorios.clear();
+    notifyListeners();
+  }
+
+  void clearStatusFilter() {
+    _selectedStatuses.clear();
+    notifyListeners();
+  }
+
+  void clearBlockFilter() {
+    _selectedBlocks.clear();
     notifyListeners();
   }
 
