@@ -157,11 +157,25 @@ class CsvService {
         return await fetchLots();
       }
 
-      final List<List<dynamic>> rows = const CsvToListConverter().convert(
-        csvString,
-      );
-      if (rows.isEmpty || rows.length == 1) {
-        debugPrint('fetchLots: rows empty or only header. Header: ${rows.isNotEmpty ? rows[0] : "none"}');
+      final List<List<dynamic>> rows = const CsvToListConverter().convert(csvString);
+      if (rows.isEmpty) {
+        debugPrint('fetchLots: rows empty');
+        return [];
+      }
+
+      final header = rows[0].map((e) => e.toString().trim()).toList();
+      
+      // CACHE MIGRATION: If we expect 'cartorio' but it's missing from the current data,
+      // reset the cache to load the fresh one from assets.
+      final bool hasCartorio = header.any((h) => h.toLowerCase().contains('cartorio'));
+      if (!hasCartorio && kIsWeb) {
+        debugPrint('fetchLots: Migrating data (adding Cartorio column). Resetting cache.');
+        await clearLocalCache();
+        return await fetchLots();
+      }
+      
+      if (rows.length == 1) {
+        debugPrint('fetchLots: only header. Header: $header');
         return [];
       }
 
@@ -211,7 +225,7 @@ class CsvService {
           'lot_number',
           'block_number',
           'Proprietario',
-          'cartorio',
+          'Cartorio',
           'price',
           'status',
           'area',
@@ -439,7 +453,7 @@ class CsvService {
   String _jsonToCsv(List<dynamic> jsonList) {
     if (jsonList.isEmpty) return '';
     final List<List<dynamic>> rows = [
-       ['id', 'matricula', 'lot_number', 'block_number', 'Proprietario', 'cartorio', 'price', 'status', 'area', 'x', 'y']
+       ['id', 'matricula', 'lot_number', 'block_number', 'Proprietario', 'Cartorio', 'price', 'status', 'area', 'x', 'y']
     ];
     for (var item in jsonList) {
       final map = item as Map<String, dynamic>;

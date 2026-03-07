@@ -56,13 +56,26 @@ class LotModel {
   });
 
   factory LotModel.fromMap(Map<String, dynamic> map) {
-    // Handle the case where 'Proprietario' might be capitalized or lowercase
-    final propValue = map['Proprietario'] ?? map['proprietario'] ?? '';
-    final cartorioValue = map['cartorio'] ?? map['Cartorio'] ?? '';
+    // Helper to get value case-insensitively
+    dynamic _get(List<String> keys) {
+      for (var key in keys) {
+        if (map.containsKey(key)) return map[key];
+        // Also check actual keys case-insensitively
+        for (var entry in map.entries) {
+          if (entry.key.toLowerCase().trim() == key.toLowerCase()) {
+            return entry.value;
+          }
+        }
+      }
+      return null;
+    }
+
+    final propValue = _get(['proprietario', 'Proprietario']) ?? '';
+    final cartorioValue = _get(['cartorio', 'Cartorio', 'Cartório', 'cartório']) ?? '';
     
     // Parse price string like "R$ 110.000,00"
     double parsedPrice = 0.0;
-    final priceStr = (map['price'] ?? map['Price'])?.toString() ?? '';
+    final priceStr = _get(['price', 'Price'])?.toString() ?? '';
     if (priceStr.isNotEmpty) {
       final cleanPrice = priceStr.replaceAll('R\$', '').replaceAll('.', '').replaceAll(',', '.').trim();
       parsedPrice = double.tryParse(cleanPrice) ?? 0.0;
@@ -70,7 +83,7 @@ class LotModel {
 
     // Parse area string like "492,35"
     double parsedArea = 0.0;
-    final areaStr = (map['area'] ?? map['Area'])?.toString() ?? '';
+    final areaStr = _get(['area', 'Area'])?.toString() ?? '';
     if (areaStr.isNotEmpty) {
       final cleanArea = areaStr.replaceAll(',', '.').trim();
       parsedArea = double.tryParse(cleanArea) ?? 0.0;
@@ -78,13 +91,13 @@ class LotModel {
 
     return LotModel(
       id: map['id']?.toString() ?? '',
-      matricula: (map['matricula'] ?? map['Matricula'])?.toString() ?? '',
-      lotNumber: (map['lot_number'] ?? map['Lot_number'] ?? map['lote'])?.toString() ?? '',
-      blockNumber: (map['block_number'] ?? map['Block_number'] ?? map['quadra'])?.toString() ?? '',
+      matricula: _get(['matricula', 'Matricula'])?.toString() ?? '',
+      lotNumber: _get(['lot_number', 'Lot_number', 'lote'])?.toString() ?? '',
+      blockNumber: _get(['block_number', 'Block_number', 'quadra'])?.toString() ?? '',
       proprietario: propValue.toString(),
       cartorio: cartorioValue.toString(),
       price: parsedPrice,
-      status: _parseStatus((map['status'] ?? map['Status'])?.toString()),
+      status: _parseStatus(_get(['status', 'Status'])?.toString()),
       area: parsedArea,
       x: _parseDouble(map['x']),
       y: _parseDouble(map['y']),
