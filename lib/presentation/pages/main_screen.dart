@@ -5,6 +5,7 @@ import 'package:loteamento_app/data/models/lot_model.dart';
 import 'package:loteamento_app/presentation/providers/lot_provider.dart';
 import 'package:loteamento_app/presentation/pages/loading_screen.dart';
 import 'package:loteamento_app/presentation/pages/error_screen.dart';
+import 'package:intl/intl.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -103,7 +104,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Loteamento Interativo'),
+        title: const Text('Loteamento Santa Fé'),
         actions: [
           Consumer<LotProvider>(
             builder: (context, provider, _) => Row(
@@ -142,7 +143,8 @@ class _MainScreenState extends State<MainScreen> {
                           ? null
                           : Colors.orange,
                     ),
-                    onPressed: () => _showCartorioFilterDialog(context, provider),
+                    onPressed: () =>
+                        _showCartorioFilterDialog(context, provider),
                     tooltip: 'Filtrar por Cartório',
                   ),
                   IconButton(
@@ -182,7 +184,11 @@ class _MainScreenState extends State<MainScreen> {
                       ? 'Sair do Modo Seleção'
                       : 'Seleção Múltipla',
                 ),
-                if (provider.placedLots.isNotEmpty && (provider.selectedOwners.isNotEmpty || provider.selectedCartorios.isNotEmpty || provider.selectedStatuses.isNotEmpty || provider.selectedBlocks.isNotEmpty))
+                if (provider.placedLots.isNotEmpty &&
+                    (provider.selectedOwners.isNotEmpty ||
+                        provider.selectedCartorios.isNotEmpty ||
+                        provider.selectedStatuses.isNotEmpty ||
+                        provider.selectedBlocks.isNotEmpty))
                   IconButton(
                     icon: const Icon(Icons.analytics, color: Colors.orange),
                     onPressed: () => _showFilterSummary(context, provider),
@@ -264,13 +270,17 @@ class _MainScreenState extends State<MainScreen> {
     final left = (lot.x / 100) * constraints.maxWidth - (pinSize / 2);
     final top = (lot.y / 100) * constraints.maxHeight - (pinSize / 2);
 
-    final isSelected = context.read<LotProvider>().selectedLotIds.contains(lot.id);
+    final isSelected = context.read<LotProvider>().selectedLotIds.contains(
+      lot.id,
+    );
 
     Widget pin = Container(
       width: pinSize,
       height: pinSize,
       decoration: BoxDecoration(
-        color: isSelected ? Colors.orange : lot.status.color.withValues(alpha: 0.8),
+        color: isSelected
+            ? Colors.orange
+            : lot.status.color.withValues(alpha: 0.8),
         shape: BoxShape.circle,
         border: Border.all(
           color: isSelected ? Colors.white : Colors.white,
@@ -278,8 +288,16 @@ class _MainScreenState extends State<MainScreen> {
         ),
         boxShadow: [
           if (isSelected)
-            const BoxShadow(color: Colors.orangeAccent, blurRadius: 8, spreadRadius: 2),
-          const BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+            const BoxShadow(
+              color: Colors.orangeAccent,
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          const BoxShadow(
+            color: Colors.black26,
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
         ],
       ),
       child: Center(
@@ -334,7 +352,7 @@ class _MainScreenState extends State<MainScreen> {
               // Optional: Proactive summary? User said "Se for selecionado mais de um.. vai abrir um pop up"
               // but maybe triggered by a button is better UI so it doesn't pop up every tap.
               // I'll stick to the button first, or if he really wants automaic:
-              // _showSelectionSummary(context, provider); 
+              // _showSelectionSummary(context, provider);
             }
           } else {
             _showLotDetails(lot);
@@ -586,14 +604,16 @@ class _MainScreenState extends State<MainScreen> {
 
   void _showFilterSummary(BuildContext context, LotProvider provider) {
     final filtered = provider.placedLots;
-    
+
     // Grouping by owner
     final Map<String, List<LotModel>> groupedByOwner = {};
     double totalArea = 0;
     double totalPrice = 0;
 
     for (var lot in filtered) {
-      final owner = lot.proprietario.isEmpty ? 'Não informado' : lot.proprietario;
+      final owner = lot.proprietario.isEmpty
+          ? 'Não informado'
+          : lot.proprietario;
       groupedByOwner.putIfAbsent(owner, () => []).add(lot);
       totalArea += lot.area;
       totalPrice += lot.price;
@@ -616,8 +636,13 @@ class _MainScreenState extends State<MainScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('TABELA 1: POR PROPRIETÁRIO',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                const Text(
+                  'TABELA 1: POR PROPRIETÁRIO',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
                 const Divider(),
                 Table(
                   columnWidths: const {
@@ -628,31 +653,93 @@ class _MainScreenState extends State<MainScreen> {
                   children: [
                     const TableRow(
                       children: [
-                        Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Prop.', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                        Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Área', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                        Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Preço', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            'Prop.',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            'Área',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            'Preço',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     ...groupedByOwner.entries.map((entry) {
-                      final ownerArea = entry.value.fold<double>(0, (sum, lot) => sum + lot.area);
-                      final ownerPrice = entry.value.fold<double>(0, (sum, lot) => sum + lot.price);
+                      final ownerArea = entry.value.fold<double>(
+                        0,
+                        (sum, lot) => sum + lot.area,
+                      );
+                      final ownerPrice = entry.value.fold<double>(
+                        0,
+                        (sum, lot) => sum + lot.price,
+                      );
                       return TableRow(
                         children: [
-                          Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text(entry.key, style: const TextStyle(fontSize: 11))),
-                          Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text('${ownerArea.toStringAsFixed(1)}m²', style: const TextStyle(fontSize: 11))),
-                          Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text('R\$${(ownerPrice/1000).toStringAsFixed(1)}k', style: const TextStyle(fontSize: 11))),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              entry.key,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              '${ownerArea.toStringAsFixed(1)}m²',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              _formatCurrency(ownerPrice),
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
                         ],
                       );
                     }),
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text('TABELA 2: TOTAL GERAL',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                const Text(
+                  'TABELA 2: TOTAL GERAL',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
                 const Divider(),
                 _summaryRow('Lotes:', '${filtered.length}'),
-                _summaryRow('Área Total:', '${totalArea.toStringAsFixed(2)} m²'),
-                _summaryRow('Preço Total:', 'R\$ ${totalPrice.toStringAsFixed(2)}'),
+                _summaryRow(
+                  'Área Total:',
+                  '${totalArea.toStringAsFixed(2)} m²',
+                ),
+                _summaryRow(
+                  'Preço Total:',
+                  _formatCurrency(totalPrice),
+                ),
               ],
             ),
           ),
@@ -674,7 +761,10 @@ class _MainScreenState extends State<MainScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
         ],
       ),
     );
@@ -723,6 +813,10 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
     );
+  }
+
+  String _formatCurrency(double value) {
+    return NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(value);
   }
 
   void _showLotDetails(LotModel lot) {
@@ -785,7 +879,7 @@ class _MainScreenState extends State<MainScreen> {
               _detailRow(
                 Icons.payments,
                 'Preço',
-                'R\$ ${lot.price.toStringAsFixed(2)}',
+                _formatCurrency(lot.price),
               ),
               const SizedBox(height: 24),
               // if (provider.isAdmin) ...[
