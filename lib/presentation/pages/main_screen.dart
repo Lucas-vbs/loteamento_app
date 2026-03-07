@@ -182,11 +182,11 @@ class _MainScreenState extends State<MainScreen> {
                       ? 'Sair do Modo Seleção'
                       : 'Seleção Múltipla',
                 ),
-                if (provider.selectedLotIds.length > 1)
+                if (provider.placedLots.isNotEmpty && (provider.selectedOwners.isNotEmpty || provider.selectedCartorios.isNotEmpty || provider.selectedStatuses.isNotEmpty || provider.selectedBlocks.isNotEmpty))
                   IconButton(
                     icon: const Icon(Icons.analytics, color: Colors.orange),
-                    onPressed: () => _showSelectionSummary(context, provider),
-                    tooltip: 'Ver Resumo da Seleção',
+                    onPressed: () => _showFilterSummary(context, provider),
+                    tooltip: 'Ver Resumo dos Filtros',
                   ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
@@ -584,12 +584,17 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _showSelectionSummary(BuildContext context, LotProvider provider) {
-    final selected = provider.selectedLots;
+  void _showFilterSummary(BuildContext context, LotProvider provider) {
+    final filtered = provider.placedLots;
+    
+    // Grouping by owner
+    final Map<String, List<LotModel>> groupedByOwner = {};
     double totalArea = 0;
     double totalPrice = 0;
 
-    for (var lot in selected) {
+    for (var lot in filtered) {
+      final owner = lot.proprietario.isEmpty ? 'Não informado' : lot.proprietario;
+      groupedByOwner.putIfAbsent(owner, () => []).add(lot);
       totalArea += lot.area;
       totalPrice += lot.price;
     }
@@ -599,28 +604,60 @@ class _MainScreenState extends State<MainScreen> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.analytics, color: Colors.blue),
+            Icon(Icons.analytics, color: Colors.orange),
             SizedBox(width: 10),
-            Text('Resumo da Seleção'),
+            Text('Resumo dos Filtros'),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _summaryRow('Quantidade de lotes:', '${selected.length}'),
-            _summaryRow('Soma das áreas:', '${totalArea.toStringAsFixed(2)} m²'),
-            _summaryRow('Soma dos preços:', 'R\$ ${totalPrice.toStringAsFixed(2)}'),
-          ],
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('TABELA 1: POR PROPRIETÁRIO',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                const Divider(),
+                Table(
+                  columnWidths: const {
+                    0: FlexColumnWidth(2),
+                    1: FlexColumnWidth(1.2),
+                    2: FlexColumnWidth(1.5),
+                  },
+                  children: [
+                    const TableRow(
+                      children: [
+                        Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Prop.', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                        Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Área', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                        Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('Preço', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                      ],
+                    ),
+                    ...groupedByOwner.entries.map((entry) {
+                      final ownerArea = entry.value.fold<double>(0, (sum, lot) => sum + lot.area);
+                      final ownerPrice = entry.value.fold<double>(0, (sum, lot) => sum + lot.price);
+                      return TableRow(
+                        children: [
+                          Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text(entry.key, style: const TextStyle(fontSize: 11))),
+                          Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text('${ownerArea.toStringAsFixed(1)}m²', style: const TextStyle(fontSize: 11))),
+                          Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text('R\$${(ownerPrice/1000).toStringAsFixed(1)}k', style: const TextStyle(fontSize: 11))),
+                        ],
+                      );
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Text('TABELA 2: TOTAL GERAL',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                const Divider(),
+                _summaryRow('Lotes:', '${filtered.length}'),
+                _summaryRow('Área Total:', '${totalArea.toStringAsFixed(2)} m²'),
+                _summaryRow('Preço Total:', 'R\$ ${totalPrice.toStringAsFixed(2)}'),
+              ],
+            ),
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              provider.clearSelection();
-              Navigator.pop(context);
-            },
-            child: const Text('Limpar Seleção', style: TextStyle(color: Colors.red)),
-          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Fechar'),
