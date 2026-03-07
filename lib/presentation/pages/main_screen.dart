@@ -280,7 +280,7 @@ class _MainScreenState extends State<MainScreen> {
       decoration: BoxDecoration(
         color: isSelected
             ? Colors.orange
-            : lot.status.color.withValues(alpha: 0.8),
+            : lot.status.color.withOpacity(0.8),
         shape: BoxShape.circle,
         border: Border.all(
           color: isSelected ? Colors.white : Colors.white,
@@ -846,7 +846,7 @@ class _MainScreenState extends State<MainScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: lot.status.color.withValues(alpha: 0.2),
+                      color: lot.status.color.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: lot.status.color),
                     ),
