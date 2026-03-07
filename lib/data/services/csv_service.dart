@@ -179,7 +179,6 @@ class CsvService {
         return [];
       }
 
-      final header = rows[0].map((e) => e.toString().trim()).toList();
       final dataRows = rows.sublist(1);
 
       debugPrint('fetchLots: Processing ${dataRows.length} data rows. Header: $header');
