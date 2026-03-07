@@ -7,15 +7,46 @@ class LotProvider with ChangeNotifier {
   List<LotModel> _lots = [];
   bool _isLoading = false;
   String? _error;
+  final Set<String> _selectedOwners = {};
 
   LotProvider(this._csvService);
 
   List<LotModel> get lots => _lots;
-  List<LotModel> get placedLots => _lots.where((l) => l.hasLocation).toList();
+  
+  List<LotModel> get placedLots {
+    final placed = _lots.where((l) => l.hasLocation).toList();
+    if (_selectedOwners.isEmpty) return placed;
+    return placed.where((l) => _selectedOwners.contains(l.proprietario)).toList();
+  }
+
   List<LotModel> get unplacedLots => _lots.where((l) => !l.hasLocation).toList();
   
   bool get isLoading => _isLoading;
   String? get error => _error;
+  Set<String> get selectedOwners => _selectedOwners;
+
+  List<String> get allOwners {
+    return _lots
+        .map((l) => l.proprietario)
+        .where((p) => p.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+  }
+
+  void toggleOwnerFilter(String owner) {
+    if (_selectedOwners.contains(owner)) {
+      _selectedOwners.remove(owner);
+    } else {
+      _selectedOwners.add(owner);
+    }
+    notifyListeners();
+  }
+
+  void clearOwnerFilter() {
+    _selectedOwners.clear();
+    notifyListeners();
+  }
 
   bool _isAdmin = false;
   bool get isAdmin => _isAdmin;

@@ -26,21 +26,16 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  void _handleTap(Offset localOffset, BuildContext context) {
+  void _handleTap(Offset localOffset, BoxConstraints constraints) {
     final provider = context.read<LotProvider>();
     if (!provider.isAdmin) return;
 
-    // Get the actual size of the image to calculate percentages correctly
-    final RenderBox? renderBox =
-        _imageKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    final size = renderBox.size;
-    final x = (localOffset.dx / size.width) * 100;
-    final y = (localOffset.dy / size.height) * 100;
+    final x = (localOffset.dx / constraints.maxWidth) * 100;
+    final y = (localOffset.dy / constraints.maxHeight) * 100;
 
     debugPrint('--- LOCALIZAÇÃO TOCADA ---');
-    debugPrint('X: $x%, Y: $y% (Baseado no tamanho da imagem: ${size.width}x${size.height})');
+    debugPrint('X: $x');
+    debugPrint('Y: $y');
     debugPrint('Configuração para CSV: ,$x,$y');
     debugPrint('-------------------------');
 
@@ -106,92 +101,100 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LotProvider>(
-      builder: (context, provider, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Loteamento Interativo'),
-            actions: [
-              IconButton(
-                icon: Icon(
-                  provider.isAdmin ? Icons.admin_panel_settings : Icons.person,
-                ),
-                onPressed: () => _toggleAdminMode(provider),
-                tooltip: provider.isAdmin ? 'Modo Admin Ativo' : 'Entrar como Admin',
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () => provider.fetchLots(),
-                tooltip: 'Recarregar Dados',
-              ),
-              if (provider.isAdmin)
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Loteamento Interativo'),
+        actions: [
+          Consumer<LotProvider>(
+            builder: (context, provider, _) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 IconButton(
-                  icon: const Icon(Icons.bug_report),
-                  onPressed: () => _showDebugData(context, provider),
-                  tooltip: 'Ver Dados Carregados',
+                  icon: Icon(
+                    provider.isAdmin
+                        ? Icons.admin_panel_settings
+                        : Icons.person,
+                  ),
+                  onPressed: () => _toggleAdminMode(provider),
+                  tooltip: provider.isAdmin
+                      ? 'Modo Admin Ativo'
+                      : 'Entrar como Admin',
                 ),
-              if (provider.isAdmin)
                 IconButton(
-                  icon: const Icon(Icons.restore),
-                  onPressed: () => _confirmReset(context, provider),
-                  tooltip: 'Resetar para Padrão (Limpar Cache)',
+                  icon: Icon(
+                    provider.selectedOwners.isEmpty
+                        ? Icons.filter_list
+                        : Icons.filter_alt,
+                    color: provider.selectedOwners.isEmpty
+                        ? null
+                        : Colors.orange,
+                  ),
+                  onPressed: () => _showFilterDialog(context, provider),
+                  tooltip: 'Filtrar por Proprietário',
                 ),
-            ],
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => provider.fetchLots(),
+                  tooltip: 'Recarregar Dados',
+                ),
+                if (provider.isAdmin)
+                   IconButton(
+                    icon: const Icon(Icons.bug_report),
+                    onPressed: () => _showDebugData(context, provider),
+                    tooltip: 'Ver Dados Carregados',
+                  ),
+                if (provider.isAdmin)
+                  IconButton(
+                    icon: const Icon(Icons.restore),
+                    onPressed: () => _confirmReset(context, provider),
+                    tooltip: 'Resetar para Padrão (Limpar Cache)',
+                  ),
+              ],
+            ),
           ),
-          body: provider.isLoading
-              ? const LoadingScreen()
-              : provider.error != null
-                  ? ErrorScreen(
-                      message: provider.error!,
-                      onRetry: () => provider.fetchLots(),
-                    )
-                  : LayoutBuilder(
-                      builder: (context, constraints) {
-                        return InteractiveViewer(
-                          transformationController: _transformationController,
-                          minScale: 0.1,
-                          maxScale: 10.0,
-                          boundaryMargin: const EdgeInsets.all(2000.0),
-                          clipBehavior: Clip.none,
-                          child: Center(
-                            child: IntrinsicWidth(
-                              child: IntrinsicHeight(
-                                child: GestureDetector(
-                                  onTapDown: (details) =>
-                                      _handleTap(details.localPosition, context),
-                                  child: Stack(
-                                    children: [
-                                      // Image defines the natural size of the Stack
-                                      Image.asset(
-                                        'assets/images/map.png',
-                                        key: _imageKey,
-                                      ),
-                                      // Pins layer that perfectly matches the image dimensions
-                                      Positioned.fill(
-                                        child: LayoutBuilder(
-                                          builder: (context, mapConstraints) {
-                                            return Stack(
-                                              children: provider.placedLots
-                                                  .map((lot) => _buildPin(
-                                                      lot,
-                                                      mapConstraints,
-                                                      provider.isAdmin))
-                                                  .toList(),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-        );
-      },
+        ],
+      ),
+      body: Consumer<LotProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) return const LoadingScreen();
+          if (provider.error != null) {
+            return ErrorScreen(
+              message: provider.error!,
+              onRetry: () => provider.fetchLots(),
+            );
+          }
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return InteractiveViewer(
+                transformationController: _transformationController,
+                minScale: 0.1, // Allow zooming out more for mobile
+                maxScale: 10.0,
+                boundaryMargin: const EdgeInsets.all(1000.0), // Allow panning beyond edges
+                clipBehavior: Clip.none,
+                child: GestureDetector(
+                  onTapDown: (details) =>
+                      _handleTap(details.localPosition, constraints),
+                  child: Stack(
+                    children: [
+                      Image.asset(
+                        'assets/images/map.png',
+                        key: _imageKey,
+                        width: constraints.maxWidth,
+                        height: constraints.maxHeight,
+                        fit: BoxFit.contain,
+                      ),
+                      ...provider.placedLots.map(
+                        (lot) => _buildPin(lot, constraints, provider.isAdmin),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -235,15 +238,12 @@ class _MainScreenState extends State<MainScreen> {
           childWhenDragging: Container(),
           onDragEnd: (details) {
             // Calculate new position relative to the image container
-            final RenderBox? renderBox =
-                _imageKey.currentContext?.findRenderObject() as RenderBox?;
-            if (renderBox == null) return;
-            
+            final RenderBox renderBox =
+                _imageKey.currentContext?.findRenderObject() as RenderBox;
             final localOffset = renderBox.globalToLocal(details.offset);
-            final size = renderBox.size;
 
-            final newX = (localOffset.dx / size.width) * 100;
-            final newY = (localOffset.dy / size.height) * 100;
+            final newX = (localOffset.dx / constraints.maxWidth) * 100;
+            final newY = (localOffset.dy / constraints.maxHeight) * 100;
 
             debugPrint('--- PINO MOVIDO (${lot.matricula}) ---');
             debugPrint('Novos valores para o CSV: ,$newX,$newY');
@@ -329,6 +329,50 @@ class _MainScreenState extends State<MainScreen> {
             child: const Text('Resetar', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showFilterDialog(BuildContext context, LotProvider provider) {
+    final owners = provider.allOwners;
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Filtrar por Proprietário'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: owners.length,
+              itemBuilder: (context, index) {
+                final owner = owners[index];
+                return CheckboxListTile(
+                  title: Text(owner),
+                  value: provider.selectedOwners.contains(owner),
+                  onChanged: (value) {
+                    setState(() {
+                      provider.toggleOwnerFilter(owner);
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                provider.clearOwnerFilter();
+                Navigator.pop(context);
+              },
+              child: const Text('Limpar Filtros'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fechar'),
+            ),
+          ],
+        ),
       ),
     );
   }
