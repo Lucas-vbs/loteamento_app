@@ -150,7 +150,7 @@ class _MainScreenState extends State<MainScreen> {
                   tooltip: 'Recarregar Dados',
                 ),
                 if (provider.isAdmin)
-                   IconButton(
+                  IconButton(
                     icon: const Icon(Icons.bug_report),
                     onPressed: () => _showDebugData(context, provider),
                     tooltip: 'Ver Dados Carregados',
@@ -182,7 +182,9 @@ class _MainScreenState extends State<MainScreen> {
                 transformationController: _transformationController,
                 minScale: 0.1, // Allow zooming out more for mobile
                 maxScale: 10.0,
-                boundaryMargin: const EdgeInsets.all(1000.0), // Allow panning beyond edges
+                boundaryMargin: const EdgeInsets.all(
+                  1000.0,
+                ), // Allow panning beyond edges
                 clipBehavior: Clip.none,
                 child: GestureDetector(
                   onTapDown: (details) =>
@@ -302,8 +304,7 @@ class _MainScreenState extends State<MainScreen> {
           ElevatedButton(
             onPressed: () {
               // Password check from .env
-              final correctPassword =
-                  dotenv.env['ADMIN_PASSWORD'] ?? 'admin_lote_2026';
+              final correctPassword = dotenv.env['ADMIN_PASSWORD'] ?? 'admin';
               if (passController.text == correctPassword) {
                 provider.setAdmin(true);
                 Navigator.pop(context);
