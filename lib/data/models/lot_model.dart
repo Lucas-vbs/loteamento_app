@@ -107,18 +107,8 @@ class LotModel {
   static double _parseDouble(dynamic value) {
     if (value == null) return -1.0;
     if (value is num) return value.toDouble();
-    String str = value.toString().trim().replaceAll(',', '.');
+    final str = value.toString().trim();
     if (str.isEmpty || str.toLowerCase() == 'null') return -1.0;
-
-    // Handle multiple dots (thousand separators from Excel/Spreadsheets)
-    if (str.contains('.')) {
-      List<String> parts = str.split('.');
-      if (parts.length > 2) {
-        // More than one dot: e.g. "8.046.875" -> "8.046875"
-        str = parts[0] + '.' + parts.sublist(1).join('');
-      }
-    }
-
     return double.tryParse(str) ?? -1.0;
   }
 
