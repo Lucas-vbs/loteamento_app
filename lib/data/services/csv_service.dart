@@ -71,6 +71,7 @@ class CsvService {
               'lot_number',
               'block_number',
               'Proprietario',
+              'cartorio',
               'price',
               'status',
               'area',
@@ -102,6 +103,7 @@ class CsvService {
             'lot_number',
             'block_number',
             'Proprietario',
+            'cartorio',
             'price',
             'status',
             'area',
@@ -209,6 +211,7 @@ class CsvService {
           'lot_number',
           'block_number',
           'Proprietario',
+          'cartorio',
           'price',
           'status',
           'area',
@@ -237,6 +240,7 @@ class CsvService {
           lot.lotNumber,
           lot.blockNumber,
           lot.proprietario,
+          lot.cartorio,
           formattedPrice,
           statusLabel,
           formattedArea,
@@ -281,6 +285,7 @@ class CsvService {
           'lot_number': l.lotNumber,
           'block_number': l.blockNumber,
           'proprietario': l.proprietario,
+          'cartorio': l.cartorio,
           'price': 'R\$ ${l.price.toStringAsFixed(2).replaceAll('.', ',')}',
           'status': l.status.label.toUpperCase(),
           'area': l.area.toString().replaceAll('.', ','),
@@ -308,6 +313,7 @@ class CsvService {
         'lot_number',
         'block_number',
         'Proprietario',
+        'cartorio',
         'price',
         'status',
         'area',
@@ -330,6 +336,7 @@ class CsvService {
         lot.lotNumber,
         lot.blockNumber,
         lot.proprietario,
+        lot.cartorio,
         formattedPrice,
         statusLabel,
         formattedArea,
@@ -353,6 +360,7 @@ class CsvService {
         lotNumber: lot.lotNumber,
         blockNumber: lot.blockNumber,
         proprietario: lot.proprietario,
+        cartorio: lot.cartorio,
         price: lot.price,
         status: lot.status,
         area: lot.area,
@@ -375,6 +383,7 @@ class CsvService {
         lotNumber: lot.lotNumber,
         blockNumber: lot.blockNumber,
         proprietario: lot.proprietario,
+        cartorio: lot.cartorio,
         price: lot.price,
         status: lot.status,
         area: lot.area,
@@ -397,6 +406,7 @@ class CsvService {
         lotNumber: lot.lotNumber,
         blockNumber: lot.blockNumber,
         proprietario: lot.proprietario,
+        cartorio: lot.cartorio,
         price: lot.price,
         status: lot.status,
         area: lot.area,
@@ -429,7 +439,7 @@ class CsvService {
   String _jsonToCsv(List<dynamic> jsonList) {
     if (jsonList.isEmpty) return '';
     final List<List<dynamic>> rows = [
-       ['id', 'matricula', 'lot_number', 'block_number', 'Proprietario', 'price', 'status', 'area', 'x', 'y']
+       ['id', 'matricula', 'lot_number', 'block_number', 'Proprietario', 'cartorio', 'price', 'status', 'area', 'x', 'y']
     ];
     for (var item in jsonList) {
       final map = item as Map<String, dynamic>;
@@ -439,6 +449,7 @@ class CsvService {
         map['lot_number'] ?? map['Lot_number'] ?? map['lote'] ?? '',
         map['block_number'] ?? map['Block_number'] ?? map['quadra'] ?? '',
         map['proprietario'] ?? map['Proprietario'] ?? '',
+        map['cartorio'] ?? map['Cartorio'] ?? '',
         map['price'] ?? map['Price'] ?? '',
         map['status'] ?? map['Status'] ?? 'DISPONÍVEL',
         map['area'] ?? map['Area'] ?? '',

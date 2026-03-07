@@ -8,15 +8,24 @@ class LotProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   final Set<String> _selectedOwners = {};
+  final Set<String> _selectedCartorios = {};
 
   LotProvider(this._csvService);
 
   List<LotModel> get lots => _lots;
   
   List<LotModel> get placedLots {
-    final placed = _lots.where((l) => l.hasLocation).toList();
-    if (_selectedOwners.isEmpty) return placed;
-    return placed.where((l) => _selectedOwners.contains(l.proprietario)).toList();
+    var filtered = _lots.where((l) => l.hasLocation).toList();
+    
+    if (_selectedOwners.isNotEmpty) {
+      filtered = filtered.where((l) => _selectedOwners.contains(l.proprietario)).toList();
+    }
+    
+    if (_selectedCartorios.isNotEmpty) {
+      filtered = filtered.where((l) => _selectedCartorios.contains(l.cartorio)).toList();
+    }
+    
+    return filtered;
   }
 
   List<LotModel> get unplacedLots => _lots.where((l) => !l.hasLocation).toList();
@@ -24,11 +33,21 @@ class LotProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   Set<String> get selectedOwners => _selectedOwners;
+  Set<String> get selectedCartorios => _selectedCartorios;
 
   List<String> get allOwners {
     return _lots
         .map((l) => l.proprietario)
         .where((p) => p.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+  }
+
+  List<String> get allCartorios {
+    return _lots
+        .map((l) => l.cartorio)
+        .where((c) => c.isNotEmpty)
         .toSet()
         .toList()
       ..sort();
@@ -43,8 +62,28 @@ class LotProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleCartorioFilter(String cartorio) {
+    if (_selectedCartorios.contains(cartorio)) {
+      _selectedCartorios.remove(cartorio);
+    } else {
+      _selectedCartorios.add(cartorio);
+    }
+    notifyListeners();
+  }
+
+  void clearFilters() {
+    _selectedOwners.clear();
+    _selectedCartorios.clear();
+    notifyListeners();
+  }
+
   void clearOwnerFilter() {
     _selectedOwners.clear();
+    notifyListeners();
+  }
+
+  void clearCartorioFilter() {
+    _selectedCartorios.clear();
     notifyListeners();
   }
 
@@ -83,6 +122,7 @@ class LotProvider with ChangeNotifier {
           lotNumber: lot.lotNumber,
           blockNumber: lot.blockNumber,
           proprietario: lot.proprietario,
+          cartorio: lot.cartorio,
           price: lot.price,
           status: lot.status,
           area: lot.area,

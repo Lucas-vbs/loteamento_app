@@ -123,14 +123,26 @@ class _MainScreenState extends State<MainScreen> {
                 IconButton(
                   icon: Icon(
                     provider.selectedOwners.isEmpty
-                        ? Icons.filter_list
-                        : Icons.filter_alt,
+                        ? Icons.person_search_outlined
+                        : Icons.person_search,
                     color: provider.selectedOwners.isEmpty
                         ? null
                         : Colors.orange,
                   ),
                   onPressed: () => _showFilterDialog(context, provider),
                   tooltip: 'Filtrar por Proprietário',
+                ),
+                IconButton(
+                  icon: Icon(
+                    provider.selectedCartorios.isEmpty
+                        ? Icons.account_balance_outlined
+                        : Icons.account_balance,
+                    color: provider.selectedCartorios.isEmpty
+                        ? null
+                        : Colors.orange,
+                  ),
+                  onPressed: () => _showCartorioFilterDialog(context, provider),
+                  tooltip: 'Filtrar por Cartório',
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
@@ -377,6 +389,50 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  void _showCartorioFilterDialog(BuildContext context, LotProvider provider) {
+    final cartorios = provider.allCartorios;
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Filtrar por Cartório'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: cartorios.length,
+              itemBuilder: (context, index) {
+                final cartorio = cartorios[index];
+                return CheckboxListTile(
+                  title: Text(cartorio),
+                  value: provider.selectedCartorios.contains(cartorio),
+                  onChanged: (value) {
+                    setState(() {
+                      provider.toggleCartorioFilter(cartorio);
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                provider.clearCartorioFilter();
+                Navigator.pop(context);
+              },
+              child: const Text('Limpar Filtros'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fechar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showDebugData(BuildContext context, LotProvider provider) {
     showDialog(
       context: context,
@@ -468,6 +524,11 @@ class _MainScreenState extends State<MainScreen> {
                 Icons.person_outline,
                 'Proprietário',
                 lot.proprietario,
+              ),
+              _detailRow(
+                Icons.account_balance_outlined,
+                'Cartório',
+                lot.cartorio.isEmpty ? 'Não informado' : lot.cartorio,
               ),
               _detailRow(Icons.description, 'Matrícula', lot.matricula),
               _detailRow(Icons.grid_view, 'Quadra', lot.blockNumber),

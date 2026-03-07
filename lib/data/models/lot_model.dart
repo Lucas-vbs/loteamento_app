@@ -34,6 +34,7 @@ class LotModel {
   final String lotNumber;
   final String blockNumber;
   final String proprietario;
+  final String cartorio;
   final double price;
   final LotStatus status;
   final double area;
@@ -46,6 +47,7 @@ class LotModel {
     required this.lotNumber,
     required this.blockNumber,
     required this.proprietario,
+    required this.cartorio,
     required this.price,
     required this.status,
     required this.area,
@@ -56,6 +58,7 @@ class LotModel {
   factory LotModel.fromMap(Map<String, dynamic> map) {
     // Handle the case where 'Proprietario' might be capitalized or lowercase
     final propValue = map['Proprietario'] ?? map['proprietario'] ?? '';
+    final cartorioValue = map['cartorio'] ?? map['Cartorio'] ?? '';
     
     // Parse price string like "R$ 110.000,00"
     double parsedPrice = 0.0;
@@ -79,6 +82,7 @@ class LotModel {
       lotNumber: (map['lot_number'] ?? map['Lot_number'] ?? map['lote'])?.toString() ?? '',
       blockNumber: (map['block_number'] ?? map['Block_number'] ?? map['quadra'])?.toString() ?? '',
       proprietario: propValue.toString(),
+      cartorio: cartorioValue.toString(),
       price: parsedPrice,
       status: _parseStatus((map['status'] ?? map['Status'])?.toString()),
       area: parsedArea,
