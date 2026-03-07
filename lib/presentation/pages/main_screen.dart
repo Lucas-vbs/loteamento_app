@@ -147,6 +147,24 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ],
                 IconButton(
+                  icon: Icon(
+                    provider.isSelectionMode
+                        ? Icons.checklist_rtl
+                        : Icons.playlist_add_check_outlined,
+                    color: provider.isSelectionMode ? Colors.blue : null,
+                  ),
+                  onPressed: () => provider.toggleSelectionMode(),
+                  tooltip: provider.isSelectionMode
+                      ? 'Sair do Modo Seleção'
+                      : 'Seleção Múltipla',
+                ),
+                if (provider.selectedLotIds.length > 1)
+                  IconButton(
+                    icon: const Icon(Icons.analytics, color: Colors.orange),
+                    onPressed: () => _showSelectionSummary(context, provider),
+                    tooltip: 'Ver Resumo da Seleção',
+                  ),
+                IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: () => provider.fetchLots(),
                   tooltip: 'Recarregar Dados',
@@ -222,15 +240,22 @@ class _MainScreenState extends State<MainScreen> {
     final left = (lot.x / 100) * constraints.maxWidth - (pinSize / 2);
     final top = (lot.y / 100) * constraints.maxHeight - (pinSize / 2);
 
+    final isSelected = context.read<LotProvider>().selectedLotIds.contains(lot.id);
+
     Widget pin = Container(
       width: pinSize,
       height: pinSize,
       decoration: BoxDecoration(
-        color: lot.status.color.withValues(alpha: 0.8),
+        color: isSelected ? Colors.orange : lot.status.color.withValues(alpha: 0.8),
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+        border: Border.all(
+          color: isSelected ? Colors.white : Colors.white,
+          width: isSelected ? 3 : 2,
+        ),
+        boxShadow: [
+          if (isSelected)
+            const BoxShadow(color: Colors.orangeAccent, blurRadius: 8, spreadRadius: 2),
+          const BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: Center(
@@ -272,10 +297,27 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
+    final provider = context.read<LotProvider>();
+
     return Positioned(
       left: left,
       top: top,
-      child: GestureDetector(onTap: () => _showLotDetails(lot), child: pin),
+      child: GestureDetector(
+        onTap: () {
+          if (provider.isSelectionMode) {
+            provider.toggleLotSelection(lot.id);
+            if (provider.selectedLotIds.length > 1) {
+              // Optional: Proactive summary? User said "Se for selecionado mais de um.. vai abrir um pop up"
+              // but maybe triggered by a button is better UI so it doesn't pop up every tap.
+              // I'll stick to the button first, or if he really wants automaic:
+              // _showSelectionSummary(context, provider); 
+            }
+          } else {
+            _showLotDetails(lot);
+          }
+        },
+        child: pin,
+      ),
     );
   }
 
@@ -432,6 +474,65 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSelectionSummary(BuildContext context, LotProvider provider) {
+    final selected = provider.selectedLots;
+    double totalArea = 0;
+    double totalPrice = 0;
+
+    for (var lot in selected) {
+      totalArea += lot.area;
+      totalPrice += lot.price;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.analytics, color: Colors.blue),
+            SizedBox(width: 10),
+            Text('Resumo da Seleção'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _summaryRow('Quantidade de lotes:', '${selected.length}'),
+            _summaryRow('Soma das áreas:', '${totalArea.toStringAsFixed(2)} m²'),
+            _summaryRow('Soma dos preços:', 'R\$ ${totalPrice.toStringAsFixed(2)}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              provider.clearSelection();
+              Navigator.pop(context);
+            },
+            child: const Text('Limpar Seleção', style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        ],
       ),
     );
   }

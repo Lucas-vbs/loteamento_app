@@ -9,6 +9,8 @@ class LotProvider with ChangeNotifier {
   String? _error;
   final Set<String> _selectedOwners = {};
   final Set<String> _selectedCartorios = {};
+  final Set<String> _selectedLotIds = {};
+  bool _isSelectionMode = false;
 
   LotProvider(this._csvService);
 
@@ -34,6 +36,33 @@ class LotProvider with ChangeNotifier {
   String? get error => _error;
   Set<String> get selectedOwners => _selectedOwners;
   Set<String> get selectedCartorios => _selectedCartorios;
+  Set<String> get selectedLotIds => _selectedLotIds;
+  bool get isSelectionMode => _isSelectionMode;
+
+  List<LotModel> get selectedLots =>
+      _lots.where((l) => _selectedLotIds.contains(l.id)).toList();
+
+  void toggleSelectionMode() {
+    _isSelectionMode = !_isSelectionMode;
+    if (!_isSelectionMode) {
+      _selectedLotIds.clear();
+    }
+    notifyListeners();
+  }
+
+  void toggleLotSelection(String lotId) {
+    if (_selectedLotIds.contains(lotId)) {
+      _selectedLotIds.remove(lotId);
+    } else {
+      _selectedLotIds.add(lotId);
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedLotIds.clear();
+    notifyListeners();
+  }
 
   List<String> get allOwners {
     return _lots
