@@ -120,30 +120,32 @@ class _MainScreenState extends State<MainScreen> {
                       ? 'Modo Admin Ativo'
                       : 'Entrar como Admin',
                 ),
-                IconButton(
-                  icon: Icon(
-                    provider.selectedOwners.isEmpty
-                        ? Icons.person_search_outlined
-                        : Icons.person_search,
-                    color: provider.selectedOwners.isEmpty
-                        ? null
-                        : Colors.orange,
+                if (provider.isAdmin) ...[
+                  IconButton(
+                    icon: Icon(
+                      provider.selectedOwners.isEmpty
+                          ? Icons.person_search_outlined
+                          : Icons.person_search,
+                      color: provider.selectedOwners.isEmpty
+                          ? null
+                          : Colors.orange,
+                    ),
+                    onPressed: () => _showFilterDialog(context, provider),
+                    tooltip: 'Filtrar por Proprietário',
                   ),
-                  onPressed: () => _showFilterDialog(context, provider),
-                  tooltip: 'Filtrar por Proprietário',
-                ),
-                IconButton(
-                  icon: Icon(
-                    provider.selectedCartorios.isEmpty
-                        ? Icons.account_balance_outlined
-                        : Icons.account_balance,
-                    color: provider.selectedCartorios.isEmpty
-                        ? null
-                        : Colors.orange,
+                  IconButton(
+                    icon: Icon(
+                      provider.selectedCartorios.isEmpty
+                          ? Icons.account_balance_outlined
+                          : Icons.account_balance,
+                      color: provider.selectedCartorios.isEmpty
+                          ? null
+                          : Colors.orange,
+                    ),
+                    onPressed: () => _showCartorioFilterDialog(context, provider),
+                    tooltip: 'Filtrar por Cartório',
                   ),
-                  onPressed: () => _showCartorioFilterDialog(context, provider),
-                  tooltip: 'Filtrar por Cartório',
-                ),
+                ],
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: () => provider.fetchLots(),
@@ -524,12 +526,14 @@ class _MainScreenState extends State<MainScreen> {
               _detailRow(
                 Icons.person_outline,
                 'Proprietário',
-                lot.proprietario,
+                provider.isAdmin ? lot.proprietario : 'Restrito (Modo Admin)',
               ),
               _detailRow(
                 Icons.account_balance_outlined,
                 'Cartório',
-                lot.cartorio.isEmpty ? 'Não informado' : lot.cartorio,
+                provider.isAdmin
+                    ? (lot.cartorio.isEmpty ? 'Não informado' : lot.cartorio)
+                    : 'Restrito (Modo Admin)',
               ),
               _detailRow(Icons.description, 'Matrícula', lot.matricula),
               _detailRow(Icons.grid_view, 'Quadra', lot.blockNumber),
