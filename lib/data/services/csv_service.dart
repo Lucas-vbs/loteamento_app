@@ -12,6 +12,8 @@ class CsvService {
   static const String _assetPath = 'assets/data/lotes.csv';
   static const String _jsonAssetPath = 'assets/data/lotes.json';
   static const String _webKey = 'lotes_csv_data';
+  static const String _versionKey = 'loteamento_data_version';
+  static const String _currentVersion = '2.2'; // Force full reset
 
   // Cache for web
   String? _webDataCache;
@@ -31,6 +33,15 @@ class CsvService {
   Future<void> initDefault() async {
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
+      final savedVersion = prefs.getString(_versionKey);
+      
+      // Force reset if version is old or missing
+      if (savedVersion != _currentVersion) {
+        debugPrint('initDefault: Version migration ($savedVersion -> $_currentVersion). Clearing old data.');
+        await prefs.remove(_webKey);
+        await prefs.setString(_versionKey, _currentVersion);
+      }
+
       if (!prefs.containsKey(_webKey)) {
         try {
           // Try loading JSON first (more robust on web)
