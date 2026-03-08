@@ -5,7 +5,7 @@ import 'package:loteamento_app/data/services/csv_service.dart';
 import 'package:loteamento_app/presentation/providers/lot_provider.dart';
 import 'package:loteamento_app/presentation/pages/main_screen.dart';
 
-import 'package:flutter/foundation.dart';
+// Removed redundant import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

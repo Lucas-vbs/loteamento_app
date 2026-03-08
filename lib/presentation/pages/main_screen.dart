@@ -311,7 +311,7 @@ class _MainScreenState extends State<MainScreen> {
           lot.lotNumber,
           style: TextStyle(
             color: Colors.white,
-            fontSize: isMobile ? 12 : 8,
+            fontSize: (pinSize * 0.4).clamp(6.0, 14.0),
             fontWeight: FontWeight.bold,
           ),
         ),
