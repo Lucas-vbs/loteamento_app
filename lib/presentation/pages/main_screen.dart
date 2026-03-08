@@ -27,12 +27,12 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  void _handleTap(Offset localOffset, BoxConstraints constraints) {
+  void _handleTap(Offset localOffset, Size renderSize) {
     final provider = context.read<LotProvider>();
     if (!provider.isAdmin) return;
 
-    final x = (localOffset.dx / constraints.maxWidth) * 100;
-    final y = (localOffset.dy / constraints.maxHeight) * 100;
+    final x = (localOffset.dx / renderSize.width) * 100;
+    final y = (localOffset.dy / renderSize.height) * 100;
 
     debugPrint('--- LOCALIZAÇÃO TOCADA ---');
     debugPrint('X: $x');
@@ -226,49 +226,52 @@ class _MainScreenState extends State<MainScreen> {
             );
           }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return InteractiveViewer(
-                transformationController: _transformationController,
-                minScale: 0.1, // Allow zooming out more for mobile
-                maxScale: 10.0,
-                boundaryMargin: const EdgeInsets.all(
-                  1000.0,
-                ), // Allow panning beyond edges
-                clipBehavior: Clip.none,
-                child: GestureDetector(
-                  onTapDown: (details) =>
-                      _handleTap(details.localPosition, constraints),
-                  child: Stack(
-                    children: [
-                      Image.asset(
-                        'assets/images/map.png',
-                        key: _imageKey,
-                        width: constraints.maxWidth,
-                        height: constraints.maxHeight,
-                        fit: BoxFit.contain,
+          return InteractiveViewer(
+            transformationController: _transformationController,
+            minScale: 0.1,
+            maxScale: 10.0,
+            boundaryMargin: const EdgeInsets.all(2000.0),
+            clipBehavior: Clip.none,
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1483 / 652, // Native Aspect Ratio of map.png
+                child: LayoutBuilder(
+                  builder: (context, mapConstraints) {
+                    final mapSize = Size(mapConstraints.maxWidth, mapConstraints.maxHeight);
+                    return GestureDetector(
+                      onTapDown: (details) => _handleTap(details.localPosition, mapSize),
+                      child: Stack(
+                        children: [
+                          Image.asset(
+                            'assets/images/map.png',
+                            key: _imageKey,
+                            width: mapConstraints.maxWidth,
+                            height: mapConstraints.maxHeight,
+                            fit: BoxFit.fill, // Now safe because AspectRatio matches exactly
+                          ),
+                          ...provider.placedLots.map(
+                            (lot) => _buildPin(lot, mapSize, provider.isAdmin),
+                          ),
+                        ],
                       ),
-                      ...provider.placedLots.map(
-                        (lot) => _buildPin(lot, constraints, provider.isAdmin),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildPin(LotModel lot, BoxConstraints constraints, bool isAdmin) {
+  Widget _buildPin(LotModel lot, Size renderSize, bool isAdmin) {
     // Make pins larger on mobile for easier tapping
-    final isMobile = constraints.maxWidth < 600;
+    final isMobile = renderSize.width < 600;
     final pinSize = isMobile ? 32.0 : 20.0;
     // Calculate position based on percentage
-    final left = (lot.x / 100) * constraints.maxWidth - (pinSize / 2);
-    final top = (lot.y / 100) * constraints.maxHeight - (pinSize / 2);
+    final left = (lot.x / 100) * renderSize.width - (pinSize / 2);
+    final top = (lot.y / 100) * renderSize.height - (pinSize / 2);
 
     final isSelected = context.read<LotProvider>().selectedLotIds.contains(
       lot.id,
@@ -325,8 +328,8 @@ class _MainScreenState extends State<MainScreen> {
                 _imageKey.currentContext?.findRenderObject() as RenderBox;
             final localOffset = renderBox.globalToLocal(details.offset);
 
-            final newX = (localOffset.dx / constraints.maxWidth) * 100;
-            final newY = (localOffset.dy / constraints.maxHeight) * 100;
+            final newX = (localOffset.dx / renderSize.width) * 100;
+            final newY = (localOffset.dy / renderSize.height) * 100;
 
             debugPrint('--- PINO MOVIDO (${lot.matricula}) ---');
             debugPrint('Novos valores para o CSV: ,$newX,$newY');
