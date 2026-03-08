@@ -266,10 +266,14 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildPin(LotModel lot, Size renderSize, bool isAdmin) {
-    // Reduced from 0.015 to 0.008 (approx 50% smaller)
-    final dynamicPinSize = renderSize.width * 0.008;
-    // Lowered min size to 8.0 to satisfy the "too big on mobile" request
-    final pinSize = dynamicPinSize.clamp(8.0, 30.0);
+    final isUiMobile = renderSize.width < 700;
+    
+    // Scale: 0.008 for desktop, 20% smaller (0.0064) for mobile
+    final scaleMultiplier = isUiMobile ? 0.0064 : 0.008;
+    final dynamicPinSize = renderSize.width * scaleMultiplier;
+    
+    // Min size: 6px on mobile, 8px on desktop
+    final pinSize = dynamicPinSize.clamp(isUiMobile ? 6.0 : 8.0, 30.0);
 
     // Calculate position based on percentage
     final left = (lot.x / 100) * renderSize.width - (pinSize / 2);
@@ -289,7 +293,7 @@ class _MainScreenState extends State<MainScreen> {
         shape: BoxShape.circle,
         border: Border.all(
           color: isSelected ? Colors.white : Colors.white,
-          width: isSelected ? 3 : 2,
+          width: isUiMobile ? 1.0 : (isSelected ? 3.0 : 2.0),
         ),
         boxShadow: [
           if (isSelected)
@@ -305,16 +309,18 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          lot.lotNumber,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: (pinSize * 0.4).clamp(6.0, 14.0),
-            fontWeight: FontWeight.bold,
+      child: isUiMobile 
+        ? null // No LOT number on mobile as requested
+        : Center(
+            child: Text(
+              lot.lotNumber,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: (pinSize * 0.4).clamp(6.0, 14.0),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        ),
-      ),
     );
 
     if (isAdmin) {
