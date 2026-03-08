@@ -266,11 +266,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildPin(LotModel lot, Size renderSize, bool isAdmin) {
-    // Pin size is now a percentage of the map width (e.g., 1.5%)
-    // This ensures it scales down on mobile and up on desktop naturally.
-    final dynamicPinSize = renderSize.width * 0.015;
-    // Set a minimum size (e.g. 12px) to keep them tappable on very small screens
-    final pinSize = dynamicPinSize.clamp(12.0, 40.0);
+    // Reduced from 0.015 to 0.008 (approx 50% smaller)
+    final dynamicPinSize = renderSize.width * 0.008;
+    // Lowered min size to 8.0 to satisfy the "too big on mobile" request
+    final pinSize = dynamicPinSize.clamp(8.0, 30.0);
 
     // Calculate position based on percentage
     final left = (lot.x / 100) * renderSize.width - (pinSize / 2);
