@@ -266,16 +266,17 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildPin(LotModel lot, Size renderSize, bool isAdmin) {
-    // Detect mobile device based on screen width, not just the map container width
+    // Detect mobile device based on screen width
     final screenWidth = MediaQuery.of(context).size.width;
     final isUiMobile = screenWidth < 600;
     
-    // Desktop: 0.008, Mobile: 0.0064 (20% smaller)
-    final scaleMultiplier = isUiMobile ? 0.0064 : 0.008;
+    // Desktop: 0.014 (visible and readable)
+    // Mobile: 0.007 (compact and clean)
+    final scaleMultiplier = isUiMobile ? 0.007 : 0.014;
     final dynamicPinSize = renderSize.width * scaleMultiplier;
     
-    // Min size check
-    final pinSize = dynamicPinSize.clamp(isUiMobile ? 6.0 : 8.0, 30.0);
+    // Min size check: 6px on mobile, 14px on desktop
+    final pinSize = dynamicPinSize.clamp(isUiMobile ? 6.0 : 14.0, 45.0);
 
     // Calculate position based on percentage
     final left = (lot.x / 100) * renderSize.width - (pinSize / 2);
