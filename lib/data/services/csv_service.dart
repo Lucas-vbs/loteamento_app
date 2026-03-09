@@ -13,7 +13,7 @@ class CsvService {
   static const String _jsonAssetPath = 'assets/data/lotes.json';
   static const String _webKey = 'lotes_csv_data';
   static const String _versionKey = 'loteamento_data_version';
-  static const String _currentVersion = '2.2'; // Force full reset
+  static const String _currentVersion = '2.3'; // Force full reset after data fix
 
   // Cache for web
   String? _webDataCache;
